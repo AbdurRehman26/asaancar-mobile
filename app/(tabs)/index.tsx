@@ -3,123 +3,72 @@ import { useNavigation } from '@react-navigation/native';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
-import { Dimensions, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FilterContext } from '../_layout';
 
-const { width } = Dimensions.get('window');
-const durations = ['Hourly', 'Daily', 'Weekly'];
 const API_BASE = 'http://asaancar.test/api';
-
-const brands = [
-  { id: '1', name: 'BMW', logo: '🚗' },
-  { id: '2', name: 'Toyota', logo: '🚗' },
-  { id: '3', name: 'Mercedes', logo: '🚗' },
-  { id: '4', name: 'Tesla', logo: '🚗' },
-  { id: '5', name: 'Honda', logo: '🚗' },
-  { id: '6', name: 'Ford', logo: '🚗' },
-];
-
-function BrandItem({ brand }: { brand: any }) {
-  return (
-    <TouchableOpacity style={styles.brandItem}>
-      <View style={styles.brandIcon}>
-        <Text style={styles.brandLogo}>{brand.logo}</Text>
-      </View>
-      <Text style={styles.brandName}>{brand.name}</Text>
-    </TouchableOpacity>
-  );
-}
 
 const CarCard = React.memo(function CarCard({ car }: { car: any }) {
   const [imageError, setImageError] = useState(false);
   const router = useRouter();
-  
-  const getPrice = () => {
-    if (typeof car.price === 'string') return car.price;
-    if (typeof car.price === 'number') return `$${car.price}/hr`;
-    if (car.price && typeof car.price === 'object') {
-      return `$${car.price.amount || car.price.value || 25}/hr`;
-    }
-    return '$25.00/hr';
-  };
 
-  // Try different possible image field names
-  const getImageSource = () => {
-    // If image failed to load, use fallback
-    if (imageError) {
-      return { uri: 'http://asaancar.test/images/car-placeholder.jpeg' };
+  const handlePress = () => {
+    console.log('Car card tapped!', car.name);
+    console.log('Attempting navigation to CarBooking...');
+    try {
+      const carData = JSON.stringify(car);
+      console.log('Car data to pass:', carData);
+      router.push({
+        pathname: '/CarBooking',
+        params: { car: carData }
+      });
+      console.log('router.push called successfully');
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
-    
-    const possibleImageFields = ['image', 'image_url', 'imageUrl', 'photo', 'photo_url', 'photoUrl', 'thumbnail', 'thumbnail_url', 'thumbnailUrl'];
-    
-    for (const field of possibleImageFields) {
-      if (car[field] && typeof car[field] === 'string') {
-        
-        // Fix truncated URLs - if it ends with "cars+qui", complete it
-        let imageUrl = car[field];
-        if (imageUrl.includes('via.placeholder.com') && imageUrl.endsWith('cars+qui')) {
-          imageUrl = imageUrl + 'et';
-        }
-        
-        // Ensure URL is properly encoded
-        try {
-          const url = new URL(imageUrl);
-          return { uri: url.toString() };
-        } catch (error) {
-          // Try to fix common URL issues
-          if (!imageUrl.startsWith('http')) {
-            imageUrl = 'https://' + imageUrl;
-          }
-          return { uri: imageUrl };
-        }
-      }
-    }
-    
-    return { uri: 'http://asaancar.test/images/car-placeholder.jpeg' };
   };
 
   return (
-    <TouchableOpacity onPress={() => router.push({ pathname: '/CarBooking', params: { car: JSON.stringify(car) } })} activeOpacity={0.9}>
-      <View style={styles.carCard}>
-        <View style={styles.carCardHeader}>
-          <View style={styles.carRating}>
-            <Text style={styles.starIcon}>⭐</Text>
-            <Text style={styles.ratingText}>4.9</Text>
-          </View>
-          <TouchableOpacity style={styles.favoriteButton}>
-            <Text style={styles.heartIcon}>❤️</Text>
-          </TouchableOpacity>
-        </View>
-        
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.7}
+      style={styles.carCardTouchable}
+    >
+      <View style={styles.modernCarCard}>
         <ExpoImage
-          source={getImageSource()} 
-          style={styles.carImage} 
+          source={{ uri: 'https://picsum.photos/300/200?random=' + car.id }}
+          style={styles.modernCarImage} 
           contentFit="cover" 
           onError={() => setImageError(true)}
           onLoad={() => setImageError(false)}
         />
-        
-        <View style={styles.carCardContent}>
-          <Text style={styles.carType}>Sedan</Text>
-          <View style={styles.carTitleRow}>
-            <Text style={styles.carTitle}>
-              {car.name || car.model || car.title || 'Hyundai Verna'}
-            </Text>
-            <Text style={styles.carPrice}>{getPrice()}</Text>
-          </View>
-          
-          <View style={styles.carFeatures}>
-            <View style={styles.carFeature}>
-              <Text style={styles.featureIcon}>🚗</Text>
-              <Text style={styles.featureText}>Manual</Text>
+        <View style={styles.modernCarCardContent}>
+          <Text style={styles.modernCarTitle} numberOfLines={2}>
+            {car.name || car.model || car.title || 'Car Name'}
+          </Text>
+          <Text style={styles.modernCarBrand}>
+            {car.brand || car.make || car.company || '—'}
+          </Text>
+          <View style={styles.modernCarFeaturesGrid}>
+            <View style={styles.modernCarFeatureCol}>
+              <View style={styles.modernCarFeatureRow}>
+                <Text style={styles.featureIcon}>👤</Text>
+                <Text style={styles.modernFeatureText}>{car.seats || 5}</Text>
+              </View>
+              <View style={styles.modernCarFeatureRow}>
+                <Text style={styles.featureIcon}>⚙️</Text>
+                <Text style={styles.modernFeatureText}>{car.transmission || 'Automatic'}</Text>
+              </View>
             </View>
-            <View style={styles.carFeature}>
-              <Text style={styles.featureIcon}>⛽</Text>
-              <Text style={styles.featureText}>Petrol</Text>
-            </View>
-            <View style={styles.carFeature}>
-              <Text style={styles.featureIcon}>👥</Text>
-              <Text style={styles.featureText}>5 Seats</Text>
+            <View style={styles.modernCarFeatureCol}>
+              <View style={styles.modernCarFeatureRow}>
+                <Text style={styles.featureIcon}>⛽</Text>
+                <Text style={styles.modernFeatureText}>{car.fuelType || 'Petrol'}</Text>
+              </View>
+              <View style={styles.modernCarFeatureRow}>
+                <Text style={styles.featureIcon}>🚗</Text>
+                <Text style={styles.modernFeatureText}>{car.type || 'Sedan'}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -136,15 +85,24 @@ type DrawerParamList = {
 
 export default function HomeScreen() {
   const navigation = useNavigation<DrawerNavigationProp<DrawerParamList>>();
-  const { filters, filtersUpdated, setFiltersUpdated } = useContext(FilterContext);
-  // Remove all local filter state
+  const { filters, setFilters } = useContext(FilterContext);
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filtersLoading, setFiltersLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  // State for which filter is open in modal
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  // Filter options (should be fetched, but hardcoded for now)
+  const filterOptions = {
+    duration: ['Hourly', 'Daily', 'Weekly'],
+    brand: ['All Brands', 'Toyota', 'Honda', 'BMW', 'Mercedes', 'Audi'],
+    type: ['All Types', 'Sedan', 'SUV', 'Truck', 'Hatchback', 'Coupe'],
+    transmission: ['All', 'Automatic', 'Manual'],
+    fuelType: ['All', 'Petrol', 'Diesel', 'Electric', 'Hybrid'],
+    minSeat: ['Any', '2', '4', '5', '7', '8'],
+  };
 
   // Fetch cars (with pagination)
   const fetchCars = (reset = true) => {
@@ -172,8 +130,88 @@ export default function HomeScreen() {
       maxPrice: filters.maxPrice,
       page: reset ? '1' : (page + 1).toString(),
     });
+    // For testing, use mock data if API fails
+    const mockCars = [
+      {
+        id: 1,
+        name: 'Toyota Camry',
+        brand: 'Toyota',
+        type: 'Sedan',
+        transmission: 'Automatic',
+        fuelType: 'Petrol',
+        seats: 5,
+        airConditioning: true,
+        withDriver: 1500,
+        withoutDriver: 1200,
+        currency: 'PKR',
+        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Toyota+Camry'
+      },
+      {
+        id: 2,
+        name: 'Honda Civic',
+        brand: 'Honda',
+        type: 'Sedan',
+        transmission: 'Automatic',
+        fuelType: 'Petrol',
+        seats: 5,
+        airConditioning: true,
+        withDriver: 1400,
+        withoutDriver: 1100,
+        currency: 'PKR',
+        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Honda+Civic'
+      },
+      {
+        id: 3,
+        name: 'BMW X5',
+        brand: 'BMW',
+        type: 'SUV',
+        transmission: 'Automatic',
+        fuelType: 'Petrol',
+        seats: 7,
+        airConditioning: true,
+        withDriver: 2500,
+        withoutDriver: 2000,
+        currency: 'PKR',
+        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=BMW+X5'
+      },
+      {
+        id: 4,
+        name: 'Mercedes C-Class',
+        brand: 'Mercedes',
+        type: 'Sedan',
+        transmission: 'Automatic',
+        fuelType: 'Petrol',
+        seats: 5,
+        airConditioning: true,
+        withDriver: 2200,
+        withoutDriver: 1800,
+        currency: 'PKR',
+        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Mercedes+C-Class'
+      },
+      {
+        id: 5,
+        name: 'Audi A4',
+        brand: 'Audi',
+        type: 'Sedan',
+        transmission: 'Automatic',
+        fuelType: 'Petrol',
+        seats: 5,
+        airConditioning: true,
+        withDriver: 2000,
+        withoutDriver: 1600,
+        currency: 'PKR',
+        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Audi+A4'
+      }
+    ];
+
+    // Try API first, fallback to mock data
     fetch(`${API_BASE}/cars?${params}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          throw new Error('API not available');
+        }
+        return r.json();
+      })
       .then(data => {
         if (Array.isArray(data)) {
           if (reset) setCars(data);
@@ -193,27 +231,22 @@ export default function HomeScreen() {
         }
         setPage(reset ? 1 : page + 1);
       })
-      .catch(() => setError('Failed to load cars'))
+      .catch((error) => {
+        console.log('API failed, using mock data:', error);
+        // Use mock data for testing
+        if (reset) {
+          setCars(mockCars);
+          setHasMore(true);
+        } else {
+          setCars(prev => [...prev, ...mockCars]);
+          setHasMore(false);
+        }
+        setPage(reset ? 1 : page + 1);
+      })
       .finally(() => {
         setLoading(false);
         setLoadingMore(false);
       });
-  };
-
-  // Search handler
-  const onSearch = () => {
-    fetchCars(true);
-  };
-  const onClear = () => {
-    // setDuration('Hourly'); // This line is removed as duration is now from filters
-    // setDate(new Date());
-    // setTime(new Date());
-    // setBrand('All Brands'); // This line is removed as brand is now from filters
-    // setType('All Types'); // This line is removed as type is now from filters
-    // setTransmission('All'); // This line is removed as transmission is now from filters
-    // setFuelType('All'); // This line is removed as fuelType is now from filters
-    // setMinSeat('Any'); // This line is removed as minSeat is now from filters
-    // setMaxPrice(''); // This line is removed as maxPrice is now from filters
   };
 
   // Infinite scroll handler
@@ -224,11 +257,10 @@ export default function HomeScreen() {
   };
 
   React.useEffect(() => {
-    if (filtersUpdated) {
-      fetchCars(true);
-      setFiltersUpdated(false);
-    }
-  }, [filtersUpdated]);
+    fetchCars(true);
+  }, []);
+
+
 
   return (
     <View style={styles.container}>
@@ -244,96 +276,95 @@ export default function HomeScreen() {
               placeholderTextColor="#999"
             />
           </View>
-          <TouchableOpacity style={styles.filterButton} onPress={() => navigation.navigate('Filters')}>
-            <Text style={styles.filterIcon}>⚙️</Text>
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
-        </View>
-        {/* Only show a summary of selected filters */}
-        <View style={styles.filterSummaryRow}>
-          {/* Render selected filters as tags, guard against undefined/null/empty */}
-          {filters.duration && filters.duration !== 'Hourly' && typeof filters.duration === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>{filters.duration}</Text></View>
-          )}
-          {filters.brand && filters.brand !== 'All Brands' && typeof filters.brand === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>{filters.brand}</Text></View>
-          )}
-          {filters.type && filters.type !== 'All Types' && typeof filters.type === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>{filters.type}</Text></View>
-          )}
-          {filters.transmission && filters.transmission !== 'All' && typeof filters.transmission === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>{filters.transmission}</Text></View>
-          )}
-          {filters.fuelType && filters.fuelType !== 'All' && typeof filters.fuelType === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>{filters.fuelType}</Text></View>
-          )}
-          {filters.minSeat && filters.minSeat !== 'Any' && typeof filters.minSeat === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>{filters.minSeat} Seats</Text></View>
-          )}
-          {filters.maxPrice && typeof filters.maxPrice === 'string' && (
-            <View style={styles.filterTag}><Text style={styles.filterTagText}>${filters.maxPrice}</Text></View>
-          )}
         </View>
       </View> {/* End of header */}
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.screenContent}>
-        {/* Brands Section */}
-        <View style={styles.brandsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Brands</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.brandsScroll}>
-            {brands.map((brand) => (
-              <BrandItem key={brand.id} brand={brand} />
-            ))}
-          </ScrollView>
-        </View>
+      {/* Filter pills row: show all filters, tap to open modal */}
+      <View style={styles.filterBox}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView} contentContainerStyle={{ alignItems: 'center', flexDirection: 'row' }}>
+          {[
+            { key: 'duration', label: 'Duration', value: filters.duration },
+            { key: 'brand', label: 'Brand', value: filters.brand },
+            { key: 'type', label: 'Type', value: filters.type },
+            { key: 'transmission', label: 'Transmission', value: filters.transmission },
+            { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
+            { key: 'minSeat', label: 'Seats', value: filters.minSeat },
+          ].map(f => (
+            <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
+              <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
 
-        {/* Popular Cars Section */}
-        <View style={styles.carsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Popular Car</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
+      {/* Modal for filter selection */}
+      <Modal
+        visible={!!openFilter}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setOpenFilter(null)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} onPress={() => setOpenFilter(null)} />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 24 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#7e246c', marginBottom: 16 }}>
+            Select {openFilter && ([{ key: 'duration', label: 'Duration' }, { key: 'brand', label: 'Brand' }, { key: 'type', label: 'Type' }, { key: 'transmission', label: 'Transmission' }, { key: 'fuelType', label: 'Fuel' }, { key: 'minSeat', label: 'Seats' }].find(f => f.key === openFilter)?.label)}
+          </Text>
+          {openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
+            <TouchableOpacity
+              key={option}
+              style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
+              onPress={() => {
+                setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
+                setOpenFilter(null);
+              }}
+            >
+              <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
             </TouchableOpacity>
-          </View>
-          
-          {loading && page === 1 ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading cars...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={cars}
-              keyExtractor={(item) => item.id?.toString() || item.vin || item._id || ''}
-              renderItem={({ item }) => <CarCard car={item} />}
-              horizontal={false}
-              numColumns={1}
-              contentContainerStyle={styles.listContent}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No cars found.</Text>
-                </View>
-              }
-              onEndReached={onEndReached}
-              onEndReachedThreshold={0.5}
-              ListFooterComponent={loadingMore ? 
-                <View style={styles.loadingMoreContainer}>
-                  <Text style={styles.loadingMoreText}>Loading more...</Text>
-                </View> : null
-              }
-              scrollEnabled={false}
-            />
-          )}
+          ))}
+          <TouchableOpacity onPress={() => setOpenFilter(null)} style={{ marginTop: 18, alignSelf: 'center' }}>
+            <Text style={{ color: '#7e246c', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      </Modal>
+
+      {/* Popular Cars Section - header removed */}
+      <View style={{ flex: 1 }}>
+        {loading && page === 1 ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading cars...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={cars}
+            keyExtractor={(item) => item.id?.toString() || item.vin || item._id || ''}
+            renderItem={({ item }) => <CarCard car={item} />}
+            horizontal={false}
+            numColumns={1}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No cars found.</Text>
+              </View>
+            }
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={loadingMore ? 
+              <View style={styles.loadingMoreContainer}>
+                <Text style={styles.loadingMoreText}>Loading more...</Text>
+              </View> : null
+            }
+            style={{ flex: 1 }}
+            showsVerticalScrollIndicator={true}
+            scrollEnabled={true}
+            bounces={true}
+            alwaysBounceVertical={false}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -351,6 +382,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0, // No horizontal padding here
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+    marginBottom: 8, // Reduced margin below the search area
   },
   locationSection: {
     marginBottom: 20,
@@ -381,7 +413,7 @@ const styles = StyleSheet.create({
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     marginBottom: 0,
   },
@@ -404,31 +436,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
-  },
-  filterButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 12, // Add right margin for spacing
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#7e246c',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  filterIcon: {
-    fontSize: 16,
-    color: '#7e246c',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    backgroundColor: '#FF3B30',
-    borderRadius: 4,
   },
   scrollView: {
     flex: 1,
@@ -483,6 +490,7 @@ const styles = StyleSheet.create({
   carsSection: {
     paddingHorizontal: 0, // Remove double padding, handled by container
     paddingBottom: 20,
+    marginTop: -8, // Negative margin to pull car listing up
   },
   carCard: {
     backgroundColor: '#fff',
@@ -568,26 +576,34 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 8, // Add small top padding
   },
   loadingContainer: {
+    flex: 1,
     padding: 40,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingText: {
     color: '#666',
     fontSize: 16,
   },
   errorContainer: {
+    flex: 1,
     padding: 40,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   errorText: {
     color: '#FF3B30',
     fontSize: 16,
   },
   emptyContainer: {
+    flex: 1,
     padding: 40,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyText: {
     color: '#666',
@@ -725,17 +741,24 @@ picker: {
 pickerItem: {
   fontSize: 15,
   color: '#222',
-  },
-  filterSummaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f8f8fa',
+},
+filterBox: {
+    backgroundColor: 'transparent',
     borderRadius: 12,
     marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
+    marginVertical: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  filterScrollView: {
+    height: 32,
+  },
+  filterSummaryRow: {
+    // Remove marginHorizontal, borderRadius, minHeight
+    marginTop: 0,
+    marginBottom: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   filterSummaryText: {
     color: '#7e246c',
@@ -743,12 +766,11 @@ pickerItem: {
     fontSize: 15,
   },
   filterTag: {
-    backgroundColor: '#fff',
     borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginRight: 8,
-    marginBottom: 4,
+    marginBottom: 2,
     borderWidth: 1,
     borderColor: '#7e246c',
     alignSelf: 'flex-start',
@@ -757,5 +779,150 @@ pickerItem: {
     color: '#7e246c',
     fontWeight: '600',
     fontSize: 13,
+  },
+  modernCarCard: {
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    marginBottom: 20,
+    shadowColor: '#7e246c',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 5,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  cardAccentBar: {
+    height: 4,
+    width: '100%',
+    backgroundColor: '#7e246c',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 2,
+  },
+  modernCarImage: {
+    width: '100%',
+    height: 150,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  modernCarCardContent: {
+    padding: 18,
+  },
+  modernCarTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  modernCarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+    flex: 1,
+    marginRight: 8,
+  },
+  modernCarPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#7e246c',
+    backgroundColor: '#f8f0fa',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    overflow: 'hidden',
+  },
+  modernCarType: {
+    fontSize: 13,
+    color: '#7e246c',
+    fontWeight: '600',
+    marginBottom: 10,
+    marginTop: 2,
+  },
+  modernCarFeatures: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  modernCarFeaturePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f0fa',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 8,
+  },
+  modernFeatureText: {
+    fontSize: 12,
+    color: '#7e246c',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  modernCarBrand: {
+    color: '#7e246c',
+    fontWeight: '600',
+    fontSize: 16,
+    marginTop: 2,
+    marginBottom: 2,
+    textAlign: 'left',
+  },
+  modernCarPriceRow: {
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  modernCarPriceCurrency: {
+    color: '#7e246c',
+    fontWeight: 'bold',
+    fontSize: 22,
+  },
+  modernCarWithDriver: {
+    color: '#a05ca0',
+    fontSize: 15,
+    marginBottom: 8,
+    marginTop: 0,
+  },
+  modernCarFeaturesGrid: {
+    flexDirection: 'row',
+    marginTop: 10,
+    gap: 18,
+  },
+  modernCarFeatureCol: {
+    flex: 1,
+    gap: 8,
+  },
+  modernCarFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  modernCarPriceUnit: {
+    color: '#7e246c',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  modernCarPriceDetails: {
+    marginBottom: 8,
+    marginTop: 0,
+  },
+  bookNowContainer: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  bookNowText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  carCardTouchable: {
+    marginBottom: 16,
   },
 });

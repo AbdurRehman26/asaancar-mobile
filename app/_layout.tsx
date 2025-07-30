@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { createDrawerNavigator, DrawerScreenProps } from '@react-navigation/drawer';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -44,13 +44,29 @@ type DrawerParamList = {
 
 function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filters'>) {
   const { filters, setFilters, resetFilters, setFiltersUpdated } = useContext(FilterContext);
-  // Local state for dropdown open/close
+  // Local state for dropdown open/close and value
   const [durationOpen, setDurationOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [transmissionOpen, setTransmissionOpen] = useState(false);
   const [fuelTypeOpen, setFuelTypeOpen] = useState(false);
   const [minSeatOpen, setMinSeatOpen] = useState(false);
+  // Local state for dropdown values
+  const [durationValue, setDurationValue] = useState(filters.duration);
+  const [brandValue, setBrandValue] = useState(filters.brand);
+  const [typeValue, setTypeValue] = useState(filters.type);
+  const [transmissionValue, setTransmissionValue] = useState(filters.transmission);
+  const [fuelTypeValue, setFuelTypeValue] = useState(filters.fuelType);
+  const [minSeatValue, setMinSeatValue] = useState(filters.minSeat);
+
+  // Sync local dropdown value with context when filters change
+  React.useEffect(() => { setDurationValue(filters.duration); }, [filters.duration]);
+  React.useEffect(() => { setBrandValue(filters.brand); }, [filters.brand]);
+  React.useEffect(() => { setTypeValue(filters.type); }, [filters.type]);
+  React.useEffect(() => { setTransmissionValue(filters.transmission); }, [filters.transmission]);
+  React.useEffect(() => { setFuelTypeValue(filters.fuelType); }, [filters.fuelType]);
+  React.useEffect(() => { setMinSeatValue(filters.minSeat); }, [filters.minSeat]);
+
   // Local state for date/time picker
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -64,12 +80,13 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
   const minSeatOptions = ['Any', '2', '4', '5', '7', '8'];
 
   // Dropdown items
-  const durationItems = durations.map((d) => ({ label: d, value: d }));
-  const brandItems = brandOptions.map((b) => ({ label: b, value: b }));
-  const typeItems = typeOptions.map((t) => ({ label: t, value: t }));
-  const transmissionItems = transmissionOptions.map((t) => ({ label: t, value: t }));
-  const fuelTypeItems = fuelTypeOptions.map((f) => ({ label: f, value: f }));
-  const minSeatItems = minSeatOptions.map((s) => ({ label: s, value: s }));
+  const filterValidItems = (arr: any[]) => arr.filter(item => typeof item.label === 'string' && item.label.trim() !== '' && typeof item.value === 'string' && item.value.trim() !== '');
+  const durationItems = filterValidItems(durations.map((d) => ({ label: d, value: d })));
+  const brandItems = filterValidItems(brandOptions.map((b) => ({ label: b, value: b })));
+  const typeItems = filterValidItems(typeOptions.map((t) => ({ label: t, value: t })));
+  const transmissionItems = filterValidItems(transmissionOptions.map((t) => ({ label: t, value: t })));
+  const fuelTypeItems = filterValidItems(fuelTypeOptions.map((f) => ({ label: f, value: f })));
+  const minSeatItems = filterValidItems(minSeatOptions.map((s) => ({ label: s, value: s })));
 
   // Handlers for updating filter context
   const updateFilter = (key: string, value: any) => {
@@ -110,14 +127,11 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         <View style={{ zIndex: 6000 }}>
           <DropDownPicker
             open={durationOpen}
-            value={filters.duration}
+            value={durationValue}
             items={durationItems}
-            setOpen={open => {
-              if (open) handleOpen('duration');
-              else handleOpen('');
-            }}
-            setValue={() => {}}
-            onChangeValue={val => setFilters((prev: any) => ({ ...prev, duration: val }))}
+            setOpen={open => handleOpen(open ? 'duration' : '')}
+            setValue={val => setDurationValue(val ?? '')}
+            onChangeValue={val => { setFilters((prev: any) => ({ ...prev, duration: val ?? '' })); setDurationValue(val ?? ''); }}
             zIndex={6000}
             zIndexInverse={1000}
             style={{ backgroundColor: '#F5F6FA', borderColor: '#7e246c', borderRadius: 14, marginBottom: 18 }}
@@ -149,14 +163,11 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         <View style={{ zIndex: 5000 }}>
           <DropDownPicker
             open={brandOpen}
-            value={filters.brand}
+            value={brandValue}
             items={brandItems}
-            setOpen={open => {
-              if (open) handleOpen('brand');
-              else handleOpen('');
-            }}
-            setValue={() => {}}
-            onChangeValue={val => setFilters((prev: any) => ({ ...prev, brand: val }))}
+            setOpen={open => handleOpen(open ? 'brand' : '')}
+            setValue={val => setBrandValue(val ?? '')}
+            onChangeValue={val => { setFilters((prev: any) => ({ ...prev, brand: val ?? '' })); setBrandValue(val ?? ''); }}
             zIndex={5000}
             zIndexInverse={2000}
             style={{ backgroundColor: '#F5F6FA', borderColor: '#7e246c', borderRadius: 14, marginBottom: 18 }}
@@ -172,14 +183,11 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         <View style={{ zIndex: 4000 }}>
           <DropDownPicker
             open={typeOpen}
-            value={filters.type}
+            value={typeValue}
             items={typeItems}
-            setOpen={open => {
-              if (open) handleOpen('type');
-              else handleOpen('');
-            }}
-            setValue={() => {}}
-            onChangeValue={val => setFilters((prev: any) => ({ ...prev, type: val }))}
+            setOpen={open => handleOpen(open ? 'type' : '')}
+            setValue={val => setTypeValue(val ?? '')}
+            onChangeValue={val => { setFilters((prev: any) => ({ ...prev, type: val ?? '' })); setTypeValue(val ?? ''); }}
             zIndex={4000}
             zIndexInverse={3000}
             style={{ backgroundColor: '#F5F6FA', borderColor: '#7e246c', borderRadius: 14, marginBottom: 18 }}
@@ -195,14 +203,11 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         <View style={{ zIndex: 3000 }}>
           <DropDownPicker
             open={transmissionOpen}
-            value={filters.transmission}
+            value={transmissionValue}
             items={transmissionItems}
-            setOpen={open => {
-              if (open) handleOpen('transmission');
-              else handleOpen('');
-            }}
-            setValue={() => {}}
-            onChangeValue={val => setFilters((prev: any) => ({ ...prev, transmission: val }))}
+            setOpen={open => handleOpen(open ? 'transmission' : '')}
+            setValue={val => setTransmissionValue(val ?? '')}
+            onChangeValue={val => { setFilters((prev: any) => ({ ...prev, transmission: val ?? '' })); setTransmissionValue(val ?? ''); }}
             zIndex={3000}
             zIndexInverse={4000}
             style={{ backgroundColor: '#F5F6FA', borderColor: '#7e246c', borderRadius: 14, marginBottom: 18 }}
@@ -218,14 +223,11 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         <View style={{ zIndex: 2000 }}>
           <DropDownPicker
             open={fuelTypeOpen}
-            value={filters.fuelType}
+            value={fuelTypeValue}
             items={fuelTypeItems}
-            setOpen={open => {
-              if (open) handleOpen('fuelType');
-              else handleOpen('');
-            }}
-            setValue={() => {}}
-            onChangeValue={val => setFilters((prev: any) => ({ ...prev, fuelType: val }))}
+            setOpen={open => handleOpen(open ? 'fuelType' : '')}
+            setValue={val => setFuelTypeValue(val ?? '')}
+            onChangeValue={val => { setFilters((prev: any) => ({ ...prev, fuelType: val ?? '' })); setFuelTypeValue(val ?? ''); }}
             zIndex={2000}
             zIndexInverse={5000}
             style={{ backgroundColor: '#F5F6FA', borderColor: '#7e246c', borderRadius: 14, marginBottom: 18 }}
@@ -241,14 +243,11 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         <View style={{ zIndex: 1000 }}>
           <DropDownPicker
             open={minSeatOpen}
-            value={filters.minSeat}
+            value={minSeatValue}
             items={minSeatItems}
-            setOpen={open => {
-              if (open) handleOpen('minSeat');
-              else handleOpen('');
-            }}
-            setValue={() => {}}
-            onChangeValue={val => setFilters((prev: any) => ({ ...prev, minSeat: val }))}
+            setOpen={open => handleOpen(open ? 'minSeat' : '')}
+            setValue={val => setMinSeatValue(val ?? '')}
+            onChangeValue={val => { setFilters((prev: any) => ({ ...prev, minSeat: val ?? '' })); setMinSeatValue(val ?? ''); }}
             zIndex={1000}
             zIndexInverse={6000}
             style={{ backgroundColor: '#F5F6FA', borderColor: '#7e246c', borderRadius: 14, marginBottom: 24 }}
@@ -356,35 +355,21 @@ export default function RootLayout() {
     return null;
   }
 
-  const Drawer = createDrawerNavigator();
-
   return (
     <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
       <FilterContext.Provider value={filterContextValue}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Drawer.Navigator
-            initialRouteName="Main"
-            screenOptions={{
-              drawerPosition: 'left',
-              headerShown: false,
-              drawerType: 'front',
-              overlayColor: 'rgba(0,0,0,0.2)',
-              drawerStyle: { width: 340 },
-            }}
-          >
-            <Drawer.Screen name="Main" options={{ drawerLabel: () => null, title: '', drawerItemStyle: { height: 0 } }}>
-              {() => (
-                <Stack>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="CarBooking" options={{ headerShown: false }} />
-                  <Stack.Screen name="CreateAccount" options={{ headerShown: false }} />
-                  <Stack.Screen name="SignIn" options={{ headerShown: false }} />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-              )}
-            </Drawer.Screen>
-            <Drawer.Screen name="Filters" component={FilterDrawer} options={{ title: 'Filters' }} />
-          </Drawer.Navigator>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="OnboardingScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="LandingScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="SplashScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="CarBooking" options={{ headerShown: false }} />
+            <Stack.Screen name="CreateAccount" options={{ headerShown: false }} />
+            <Stack.Screen name="SignIn" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
       </FilterContext.Provider>

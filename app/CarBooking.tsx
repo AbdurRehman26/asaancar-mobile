@@ -1,351 +1,874 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useContext, useState } from 'react';
-import { Dimensions, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AuthContext } from './_layout';
-
-const { width } = Dimensions.get('window');
-const PLACEHOLDER_IMAGE = 'http://asaancar.test/images/car-placeholder.jpeg';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function CarBooking() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const car = params && params.car ? JSON.parse(params.car as string) : {};
-
-  const [imageError, setImageError] = useState(false);
-  const { isLoggedIn } = useContext(AuthContext);
-
-  // Robust image field detection
-  const getCarImage = () => {
-    if (imageError) return PLACEHOLDER_IMAGE;
-    const possibleFields = [
-      'image', 'image_url', 'imageUrl',
-      'photo', 'photo_url', 'photoUrl',
-      'thumbnail', 'thumbnail_url', 'thumbnailUrl',
-    ];
-    for (const field of possibleFields) {
-      if (car[field] && typeof car[field] === 'string') {
-        return car[field];
-      }
-    }
-    return PLACEHOLDER_IMAGE;
+  
+  // Parse car data from params or use default
+  let car = {
+    id: 1,
+    name: 'Toyota Camry',
+    brand: 'Toyota',
+    type: 'Sedan',
+    transmission: 'Automatic',
+    fuelType: 'Petrol',
+    seats: 5,
+    withDriver: 1500,
+    withoutDriver: 1200,
+    currency: 'PKR',
+    image: 'https://picsum.photos/300/200?random=1'
   };
 
-  const carImage = getCarImage();
-  const carName = car.name || car.model || car.title || 'Toyota Fortuner Legender';
-  const carType = car.type || 'SUV';
-  const carRating = car.rating || '4.5';
+  try {
+    if (params.car) {
+      const parsedCar = JSON.parse(params.car as string);
+      car = { ...car, ...parsedCar };
+    }
+  } catch (error) {
+    console.log('Error parsing car data:', error);
+  }
 
-  const [rentType, setRentType] = useState<'self' | 'with'>('self');
-  const [pickupDate] = useState('4 Oct');
-  const [pickupTime] = useState('10:00 AM');
-  const [returnDate] = useState('5 Oct');
-  const [returnTime] = useState('10:00 AM');
+  const [bookingType, setBookingType] = useState<'self' | 'driver'>('self');
+  const [pickupDate, setPickupDate] = useState('');
+  const [pickupTime, setPickupTime] = useState('');
+  const [numberOfDays, setNumberOfDays] = useState('1');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [locationPermission, setLocationPermission] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // Get current location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      // For demo purposes, we'll use a default location
+      const defaultLocation = {
+        latitude: 24.8607, // Karachi coordinates
+        longitude: 67.0011,
+      };
+      
+      setCurrentLocation(defaultLocation);
+      
+      // Set a default selected location
+      const mockLocation = {
+        latitude: defaultLocation.latitude,
+        longitude: defaultLocation.longitude,
+        address: 'Karachi, Pakistan (Default Location)',
+      };
+      setSelectedLocation(mockLocation);
+    } catch (error) {
+      console.log('Error getting location:', error);
+      // Set default location on error
+      const defaultLocation = {
+        latitude: 24.8607,
+        longitude: 67.0011,
+      };
+      setCurrentLocation(defaultLocation);
+      
+      const mockLocation = {
+        latitude: defaultLocation.latitude,
+        longitude: defaultLocation.longitude,
+        address: 'Karachi, Pakistan (Default Location)',
+      };
+      setSelectedLocation(mockLocation);
+    }
+  };
+
+  const handleMapPress = async (event: any) => {
+    try {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      
+      // For demo purposes, create a mock address
+      const mockAddress = `Selected Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+      
+      setSelectedLocation({
+        latitude,
+        longitude,
+        address: mockAddress,
+      });
+    } catch (error) {
+      console.log('Error handling map press:', error);
+    }
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setPickupDate(selectedDate.toISOString().split('T')[0]);
+    }
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setPickupTime(selectedTime.toTimeString().split(' ')[0].substring(0, 5));
+    }
+  };
 
   const handleBack = () => {
-    if (router.canGoBack && router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/'); // Go to Home (car listing) screen
+    console.log('Back button pressed');
+    try {
+      // Navigate to the main screen since there's no back history
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.log('Navigation failed:', error);
+      // Fallback to push if replace fails
+      try {
+        router.push('/(tabs)');
+      } catch (pushError) {
+        console.log('Push also failed:', pushError);
+      }
     }
   };
 
-  const handleContinue = () => {
-    if (!isLoggedIn) {
-      router.push('/SignIn');
-    } else {
-      // Proceed with booking (for now, just alert)
-      alert('Booking confirmed!');
+  const handleBookNow = () => {
+    if (!fullName.trim() || !phone.trim()) {
+      Alert.alert('Required Fields', 'Please fill in your full name and phone number.');
+      return;
     }
+    if (!pickupDate || !pickupTime) {
+      Alert.alert('Booking Details', 'Please select pickup date and time.');
+      return;
+    }
+    if (!selectedLocation) {
+      Alert.alert('Location Required', 'Please select a pickup location.');
+      return;
+    }
+    Alert.alert('Booking Confirmed', 'Your car booking has been successfully confirmed!');
   };
+
+  const totalPrice = (bookingType === 'driver' ? car.withDriver : car.withoutDriver) * parseInt(numberOfDays || '1');
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      {/* Car Image Overlapping Card */}
-      <View style={styles.imageWrapper}>
-        <Image
-          source={{ uri: carImage }}
-          style={styles.carImage}
-          resizeMode="contain"
-          onError={() => setImageError(true)}
-          defaultSource={{ uri: PLACEHOLDER_IMAGE }}
+    <View style={styles.container}>
+      {/* Modern Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => {
+            console.log('Back button TouchableOpacity pressed');
+            handleBack();
+          }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Book Your Car</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Car Details Card */}
+        <View style={styles.carSection}>
+          <View style={styles.carImageContainer}>
+            <ExpoImage
+              source={{ uri: car.image }}
+              style={styles.carImage}
+              contentFit="cover"
+            />
+            <View style={styles.carImageOverlay} />
+          </View>
+          
+          <View style={styles.carInfo}>
+            <Text style={styles.carName}>{car.name}</Text>
+            <Text style={styles.carBrand}>{car.brand}</Text>
+            
+            <View style={styles.carFeatures}>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureIcon}>👤</Text>
+                <Text style={styles.featureText}>{car.seats} Seats</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureIcon}>⚙️</Text>
+                <Text style={styles.featureText}>{car.transmission}</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureIcon}>⛽</Text>
+                <Text style={styles.featureText}>{car.fuelType}</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureIcon}>🚗</Text>
+                <Text style={styles.featureText}>{car.type}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Booking Type Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Booking Type</Text>
+          <View style={styles.bookingTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.bookingTypeButton,
+                bookingType === 'self' && styles.bookingTypeActive
+              ]}
+              onPress={() => setBookingType('self')}
+            >
+              <Text style={styles.bookingTypeIcon}>🚗</Text>
+              <Text style={[
+                styles.bookingTypeText,
+                bookingType === 'self' && styles.bookingTypeTextActive
+              ]}>Self Drive</Text>
+              <Text style={styles.bookingTypePrice}>{car.withoutDriver} {car.currency}</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.bookingTypeButton,
+                bookingType === 'driver' && styles.bookingTypeActive
+              ]}
+              onPress={() => setBookingType('driver')}
+            >
+              <Text style={styles.bookingTypeIcon}>👨‍💼</Text>
+              <Text style={[
+                styles.bookingTypeText,
+                bookingType === 'driver' && styles.bookingTypeTextActive
+              ]}>With Driver</Text>
+              <Text style={styles.bookingTypePrice}>{car.withDriver} {car.currency}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Pickup & Duration Details */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pickup & Duration</Text>
+          
+          {/* Pickup Date */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Pickup Date</Text>
+            <TouchableOpacity 
+              style={styles.dateTimeInput}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.dateTimeText}>
+                {pickupDate || 'Select Date'}
+              </Text>
+              <Text style={styles.calendarIcon}>📅</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Pickup Time */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Pickup Time</Text>
+            <TouchableOpacity 
+              style={styles.dateTimeInput}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Text style={styles.dateTimeText}>
+                {pickupTime || 'Select Time'}
+              </Text>
+              <Text style={styles.clockIcon}>🕐</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.dateTimeRow}>
+            <View style={styles.dateTimeColumn}>
+              <Text style={styles.dateTimeLabel}>Number of Days</Text>
+              <View style={styles.durationDisplay}>
+                <TouchableOpacity 
+                  style={styles.daysButton}
+                  onPress={() => {
+                    const current = parseInt(numberOfDays || '1');
+                    if (current > 1) {
+                      setNumberOfDays((current - 1).toString());
+                    }
+                  }}
+                >
+                  <Text style={styles.daysButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.daysText}>{numberOfDays}</Text>
+                <TouchableOpacity 
+                  style={styles.daysButton}
+                  onPress={() => {
+                    const current = parseInt(numberOfDays || '1');
+                    setNumberOfDays((current + 1).toString());
+                  }}
+                >
+                  <Text style={styles.daysButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Price Summary */}
+          <View style={styles.priceSection}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Total Price</Text>
+              <Text style={styles.priceValue}>{totalPrice} {car.currency}</Text>
+            </View>
+            <Text style={styles.priceNote}>* Prices include all taxes and fees</Text>
+          </View>
+        </View>
+
+        {/* Location Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pickup Location</Text>
+          
+          {currentLocation && (
+            <View style={styles.mapContainer}>
+              <View style={styles.webMapPlaceholder}>
+                <View style={styles.mapIconContainer}>
+                  <Text style={styles.mapIcon}>🗺️</Text>
+                </View>
+                <Text style={styles.webMapText}>Interactive Map</Text>
+                <Text style={styles.webMapSubtext}>Select your pickup location</Text>
+                
+                {/* Map-like grid pattern */}
+                <View style={styles.mapGrid}>
+                  <View style={styles.mapRow}>
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                  </View>
+                  <View style={styles.mapRow}>
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                  </View>
+                  <View style={styles.mapRow}>
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                    <View style={styles.mapCell} />
+                  </View>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.webMapButton}
+                  onPress={() => {
+                    // Simulate location selection for web
+                    const mockLocation = {
+                      latitude: currentLocation.latitude + (Math.random() - 0.5) * 0.01,
+                      longitude: currentLocation.longitude + (Math.random() - 0.5) * 0.01,
+                      address: 'Selected Location (Demo)',
+                    };
+                    setSelectedLocation(mockLocation);
+                  }}
+                >
+                  <Text style={styles.webMapButtonText}>📍 Select Location</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationLabel}>Selected Address:</Text>
+                <Text style={styles.locationAddress}>
+                  {selectedLocation?.address || 'Tap "Select Location" to choose pickup point'}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.useCurrentLocationButton}
+                  onPress={getCurrentLocation}
+                >
+                  <Text style={styles.useCurrentLocationText}>📍 Use Current Location</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Customer Information */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Information</Text>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name *"
+            value={fullName}
+            onChangeText={setFullName}
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Phone Number *"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Email (Optional)"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+          />
+        </View>
+
+        {/* Price Summary */}
+      </ScrollView>
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={pickupDate ? new Date(pickupDate) : new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          minimumDate={new Date()}
         />
-      </View>
+      )}
 
-      {/* Card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <Text style={styles.carType}>{carType}</Text>
-          <View style={styles.ratingRow}>
-            <Text style={styles.starIcon}>★</Text>
-            <Text style={styles.ratingText}>{carRating}</Text>
-          </View>
-        </View>
-        <Text style={styles.carName}>{carName}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.sectionLabel}>BOOK CAR</Text>
-        <Text style={styles.sectionTitle}>Rent Type</Text>
-        <View style={styles.rentTypeRow}>
-          <TouchableOpacity
-            style={[styles.rentTypeBtn, rentType === 'self' && styles.rentTypeBtnActive]}
-            onPress={() => setRentType('self')}
-          >
-            <Text style={[styles.rentTypeBtnText, rentType === 'self' && styles.rentTypeBtnTextActive]}>Self-Driver</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.rentTypeBtn, rentType === 'with' && styles.rentTypeBtnActive]}
-            onPress={() => setRentType('with')}
-          >
-            <Text style={[styles.rentTypeBtnText, rentType === 'with' && styles.rentTypeBtnTextActive]}>With Driver</Text>
-          </TouchableOpacity>
-        </View>
-        {rentType === 'with' && (
-          <Text style={styles.driverCostInfo}>Additional $18/hr Driver Cost if You Choose With Driver Option</Text>
-        )}
-        <Text style={styles.sectionTitle}>Pick-Up Date and Time</Text>
-        <View style={styles.dateTimeRow}>
-          <View style={styles.dateTimeBox}>
-            <Text style={styles.dateTimeLabel}>Date</Text>
-            <Text style={styles.dateTimeValue}>{pickupDate}</Text>
-            <Text style={styles.dateTimeIcon}>📅</Text>
-          </View>
-          <View style={styles.dateTimeBox}>
-            <Text style={styles.dateTimeLabel}>Time</Text>
-            <Text style={styles.dateTimeValue}>{pickupTime}</Text>
-            <Text style={styles.dateTimeIcon}>⏰</Text>
-          </View>
-        </View>
-        <Text style={styles.sectionTitle}>Return Date and Time</Text>
-        <View style={styles.dateTimeRow}>
-          <View style={styles.dateTimeBox}>
-            <Text style={styles.dateTimeLabel}>Date</Text>
-            <Text style={styles.dateTimeValue}>{returnDate}</Text>
-            <Text style={styles.dateTimeIcon}>📅</Text>
-          </View>
-          <View style={styles.dateTimeBox}>
-            <Text style={styles.dateTimeLabel}>Time</Text>
-            <Text style={styles.dateTimeValue}>{returnTime}</Text>
-            <Text style={styles.dateTimeIcon}>⏰</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
-          <Text style={styles.continueBtnText}>Continue</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Time Picker Modal */}
+      {showTimePicker && (
+        <DateTimePicker
+          value={pickupTime ? new Date(`2000-01-01T${pickupTime}`) : new Date()}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleTimeChange}
+          is24Hour={false}
+        />
+      )}
 
-      {/* Header (rendered last, always on top) */}
-      <View style={styles.headerRow} pointerEvents="auto">
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Text style={styles.backIcon}>{'\u25C0'}</Text>
+      {/* Book Now Button */}
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
+          <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Book Car</Text>
-        <View style={{ width: 32 }} />
       </View>
     </View>
   );
 }
 
-const CARD_WIDTH = width - 32;
-const IMAGE_SIZE = 160;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 60 : 30, // Add padding to avoid overlap
+    backgroundColor: '#f8f9fa',
   },
-  headerRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    paddingTop: Platform.OS === 'ios' ? 60 : 30,
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     backgroundColor: '#fff',
-    zIndex: 10,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
   },
   backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f8f0fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    fontSize: 20,
+    color: '#7e246c',
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  headerSpacer: {
+    width: 44,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  carSection: {
+    backgroundColor: '#fff',
+    margin: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#7e246c',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  carImageContainer: {
+    position: 'relative',
+    height: 200,
+  },
+  carImage: {
+    width: '100%',
+    height: '100%',
+  },
+  carImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  carInfo: {
+    padding: 20,
+  },
+  carName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  carBrand: {
+    fontSize: 16,
+    color: '#7e246c',
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  carFeatures: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f0fa',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  featureIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  featureText: {
+    fontSize: 14,
+    color: '#7e246c',
+    fontWeight: '600',
+  },
+  section: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 20,
+    shadowColor: '#7e246c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 16,
+  },
+  bookingTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bookingTypeButton: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  bookingTypeActive: {
+    backgroundColor: '#f8f0fa',
+    borderColor: '#7e246c',
+  },
+  bookingTypeIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  bookingTypeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookingTypeTextActive: {
+    color: '#7e246c',
+  },
+  bookingTypePrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#7e246c',
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  dateTimeColumn: {
+    flex: 1,
+  },
+  dateTimeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  dateTimeInput: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    color: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateTimeText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '600',
+  },
+  calendarIcon: {
+    fontSize: 20,
+    color: '#7e246c',
+  },
+  clockIcon: {
+    fontSize: 20,
+    color: '#7e246c',
+  },
+  durationDisplay: {
+    backgroundColor: '#7e246c',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 16,
+  },
+  durationText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  daysButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  backIcon: {
-    fontSize: 20,
-    color: '#222',
-  },
-  headerTitle: {
+  daysButtonText: {
+    color: '#7e246c',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  daysText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#222',
+    color: '#fff',
+    minWidth: 30,
+    textAlign: 'center',
   },
-  imageWrapper: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Platform.OS === 'ios' ? 110 : 80, // Add margin to push image below header
-    marginBottom: -IMAGE_SIZE / 2, // Pull card up to touch image, but not overlap
-    zIndex: 2,
+  input: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    color: '#1a1a1a',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
-  carImage: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  priceSection: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
     borderRadius: 20,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.10,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  card: {
-    marginTop: 0, // Remove extra margin, handled by imageWrapper
-    width: CARD_WIDTH,
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 24,
-    alignSelf: 'center',
-    shadowColor: '#000',
+    shadowColor: '#7e246c',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
   },
-  cardHeaderRow: {
+  priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  carType: {
-    color: '#7e246c',
+  priceLabel: {
+    fontSize: 18,
     fontWeight: '600',
-    fontSize: 14,
+    color: '#1a1a1a',
   },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  starIcon: {
-    color: '#FFD700',
-    fontSize: 16,
-    marginRight: 2,
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#222',
-    fontWeight: '600',
-  },
-  carName: {
-    fontSize: 20,
+  priceValue: {
+    fontSize: 24,
     fontWeight: '700',
-    color: '#222',
+    color: '#7e246c',
+  },
+  priceNote: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  bottomContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  bookButton: {
+    backgroundColor: '#7e246c',
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#7e246c',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  bookButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  mapContainer: {
+    height: 250,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  locationInfo: {
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  locationLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  locationAddress: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '600',
     marginBottom: 12,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    marginVertical: 12,
-  },
-  sectionLabel: {
-    color: '#8E8E93',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1.2,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#222',
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  rentTypeRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
-  },
-  rentTypeBtn: {
-    flex: 1,
-    backgroundColor: '#F2F4F7',
-    borderRadius: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  rentTypeBtnActive: {
+  useCurrentLocationButton: {
     backgroundColor: '#7e246c',
-  },
-  rentTypeBtnText: {
-    color: '#222',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  rentTypeBtnTextActive: {
-    color: '#fff',
-  },
-  driverCostInfo: {
-    backgroundColor: '#F2F4F7',
-    color: '#7e246c',
-    fontSize: 13,
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 8,
-  },
-  dateTimeRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
-  },
-  dateTimeBox: {
-    flex: 1,
-    backgroundColor: '#F2F4F7',
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 4,
   },
-  dateTimeLabel: {
-    color: '#8E8E93',
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  dateTimeValue: {
-    color: '#222',
-    fontWeight: '600',
-    fontSize: 15,
-    marginBottom: 2,
-  },
-  dateTimeIcon: {
-    fontSize: 18,
-    color: '#7e246c',
-  },
-  continueBtn: {
-    backgroundColor: '#7e246c',
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 18,
-  },
-  continueBtnText: {
+  useCurrentLocationText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 17,
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  webMapPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  webMapText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  webMapSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  webMapButton: {
+    backgroundColor: '#7e246c',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    shadowColor: '#7e246c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  webMapButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  mapIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#7e246c',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  mapIcon: {
+    fontSize: 30,
+    color: '#fff',
+  },
+  mapGrid: {
+    width: '100%',
+    height: 100,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  mapRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  mapCell: {
+    width: '20%',
+    height: 20,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginHorizontal: 2,
   },
 }); 
