@@ -1,28 +1,36 @@
 {
   "expo": {
-    "name": "asaancar-mobile",
+    "name": "AsaanCar",
     "slug": "asaancar-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "asaancarmobile",
+    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7e246c"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.asaancar.mobile",
       "config": {
-        "googleMapsApiKey": "AIzaSyAl7gcr1SOMOmVcINkah0IjMVTqXaA8zw4"
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#7e246c"
       },
-      "edgeToEdgeEnabled": true,
+      "package": "com.asaancar.mobile",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAl7gcr1SOMOmVcINkah0IjMVTqXaA8zw4"
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
       }
     },
@@ -33,15 +41,7 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

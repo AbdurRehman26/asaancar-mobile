@@ -316,6 +316,24 @@ export default function RootLayout() {
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Initialize auth state from stored token
+  React.useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const apiService = (await import('../services/api')).default;
+        const isAuth = await apiService.checkAuthStatus();
+        if (isAuth) {
+          setIsLoggedIn(true);
+        }
+      } catch (error) {
+        console.error('Failed to check auth status:', error);
+      }
+    };
+    
+    checkAuthStatus();
+  }, []);
+
   const login = () => setIsLoggedIn(true);
   const logout = () => setIsLoggedIn(false);
 
@@ -359,17 +377,18 @@ export default function RootLayout() {
     <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
       <FilterContext.Provider value={filterContextValue}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
+                <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="OnboardingScreen" options={{ headerShown: false }} />
             <Stack.Screen name="LandingScreen" options={{ headerShown: false }} />
             <Stack.Screen name="SplashScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="CarBooking" options={{ headerShown: false }} />
-            <Stack.Screen name="CreateAccount" options={{ headerShown: false }} />
-            <Stack.Screen name="SignIn" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
+            <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="CarBooking" options={{ headerShown: false }} />
+                  <Stack.Screen name="CreateAccount" options={{ headerShown: false }} />
+                  <Stack.Screen name="SignIn" options={{ headerShown: false }} />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
       </FilterContext.Provider>

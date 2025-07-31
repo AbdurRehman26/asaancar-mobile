@@ -82,7 +82,7 @@ export default function CarBooking() {
         longitude: 67.0011,
       };
       setCurrentLocation(defaultLocation);
-      
+
       const mockLocation = {
         latitude: defaultLocation.latitude,
         longitude: defaultLocation.longitude,
@@ -217,35 +217,35 @@ export default function CarBooking() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Booking Type</Text>
           <View style={styles.bookingTypeContainer}>
-            <TouchableOpacity
+          <TouchableOpacity
               style={[
                 styles.bookingTypeButton,
                 bookingType === 'self' && styles.bookingTypeActive
               ]}
               onPress={() => setBookingType('self')}
-            >
+          >
               <Text style={styles.bookingTypeIcon}>🚗</Text>
               <Text style={[
                 styles.bookingTypeText,
                 bookingType === 'self' && styles.bookingTypeTextActive
               ]}>Self Drive</Text>
               <Text style={styles.bookingTypePrice}>{car.withoutDriver} {car.currency}</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
             
-            <TouchableOpacity
+          <TouchableOpacity
               style={[
                 styles.bookingTypeButton,
                 bookingType === 'driver' && styles.bookingTypeActive
               ]}
               onPress={() => setBookingType('driver')}
-            >
+          >
               <Text style={styles.bookingTypeIcon}>👨‍💼</Text>
               <Text style={[
                 styles.bookingTypeText,
                 bookingType === 'driver' && styles.bookingTypeTextActive
               ]}>With Driver</Text>
               <Text style={styles.bookingTypePrice}>{car.withDriver} {car.currency}</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
           </View>
         </View>
 
@@ -306,8 +306,8 @@ export default function CarBooking() {
                 >
                   <Text style={styles.daysButtonText}>+</Text>
                 </TouchableOpacity>
-              </View>
-            </View>
+          </View>
+        </View>
           </View>
 
           {/* Price Summary */}
@@ -368,9 +368,9 @@ export default function CarBooking() {
                   }}
                 >
                   <Text style={styles.webMapButtonText}>📍 Select Location</Text>
-                </TouchableOpacity>
-              </View>
-              
+        </TouchableOpacity>
+      </View>
+
               <View style={styles.locationInfo}>
                 <Text style={styles.locationLabel}>Selected Address:</Text>
                 <Text style={styles.locationAddress}>

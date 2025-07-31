@@ -7,21 +7,15 @@ import { AuthContext } from './_layout';
 
 const { width, height } = Dimensions.get('window');
 
-export default function CreateAccount() {
+export default function LoginScreen() {
   const router = useRouter();
   const { login } = useContext(AuthContext);
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
-    if (!name.trim()) {
-      Alert.alert('Error', ERROR_MESSAGES.NAME_REQUIRED);
-      return false;
-    }
     if (!email.trim()) {
       Alert.alert('Error', ERROR_MESSAGES.EMAIL_REQUIRED);
       return false;
@@ -38,31 +32,22 @@ export default function CreateAccount() {
       Alert.alert('Error', ERROR_MESSAGES.PASSWORD_TOO_SHORT);
       return false;
     }
-    if (name.length < VALIDATION.NAME_MIN_LENGTH) {
-      Alert.alert('Error', ERROR_MESSAGES.NAME_TOO_SHORT);
-      return false;
-    }
-    if (!agreeToTerms) {
-      Alert.alert('Error', ERROR_MESSAGES.TERMS_REQUIRED);
-      return false;
-    }
     return true;
   };
 
-  const handleSignUp = async () => {
+  const handleLogin = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      const response = await apiService.register({
-        name: name.trim(),
+      const response = await apiService.login({
         email: email.trim(),
         password: password,
       });
 
-      console.log('Registration successful:', response);
+      console.log('Login successful:', response);
       
-      // Check if registration was successful
+      // Check if login was successful
       if (response.success || response.token || response.access_token || response.user) {
         // Set authentication state
         login();
@@ -74,22 +59,22 @@ export default function CreateAccount() {
         
         // Show success message after navigation
         setTimeout(() => {
-          Alert.alert('Success', SUCCESS_MESSAGES.SIGNUP_SUCCESS);
+          Alert.alert('Success', SUCCESS_MESSAGES.LOGIN_SUCCESS);
         }, 100);
       } else {
-        throw new Error('Registration failed - invalid response');
+        throw new Error('Login failed - invalid response');
       }
       
     } catch (error: any) {
-      console.error('Registration failed:', error);
+      console.error('Login failed:', error);
       
       let errorMessage = ERROR_MESSAGES.NETWORK_ERROR;
       if (error.message) {
         // Handle common API error messages
-        if (error.message.includes('Email already exists')) {
-          errorMessage = ERROR_MESSAGES.ACCOUNT_EXISTS;
-        } else if (error.message.includes('Password')) {
-          errorMessage = ERROR_MESSAGES.WEAK_PASSWORD;
+        if (error.message.includes('Invalid email or password')) {
+          errorMessage = ERROR_MESSAGES.INVALID_CREDENTIALS;
+        } else if (error.message.includes('User not found')) {
+          errorMessage = ERROR_MESSAGES.USER_NOT_FOUND;
         } else if (error.message.includes('Network')) {
           errorMessage = ERROR_MESSAGES.NETWORK_ERROR;
         } else {
@@ -97,14 +82,14 @@ export default function CreateAccount() {
         }
       }
       
-      Alert.alert('Registration Failed', errorMessage);
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSignIn = () => {
-    router.push('/LoginScreen');
+  const handleSignUp = () => {
+    router.push('/CreateAccount');
   };
 
   return (
@@ -127,24 +112,12 @@ export default function CreateAccount() {
         </TouchableOpacity>
 
         {/* Title */}
-        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.title}>Sign In</Text>
         <Text style={styles.subtitle}>
-          Fill your information below or register with your social account.
+          Fill your information below or sign in with your social account.
         </Text>
 
         {/* Input Fields */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex. John Doe"
-            placeholderTextColor="#999"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-        </View>
-
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
@@ -181,38 +154,20 @@ export default function CreateAccount() {
           </View>
         </View>
 
-        {/* Terms and Conditions */}
-        <View style={styles.termsSection}>
-          <TouchableOpacity
-            style={styles.checkbox}
-            onPress={() => setAgreeToTerms(!agreeToTerms)}
-          >
-            <View style={[styles.checkboxInner, agreeToTerms && styles.checkboxChecked]}>
-              {agreeToTerms && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-          </TouchableOpacity>
-          <View style={styles.termsText}>
-            <Text style={styles.termsLabel}>Agree with </Text>
-            <TouchableOpacity>
-              <Text style={styles.termsLink}>Terms & Condition</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Sign Up Button */}
-        <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp} disabled={isLoading}>
+        {/* Sign In Button */}
+        <TouchableOpacity style={styles.signInButton} onPress={handleLogin} disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.signUpButtonText}>Sign Up</Text>
+            <Text style={styles.signInButtonText}>Sign In</Text>
           )}
         </TouchableOpacity>
 
-        {/* Sign In Link */}
-        <View style={styles.signInSection}>
-          <Text style={styles.signInText}>Already have an account? </Text>
-          <TouchableOpacity onPress={handleSignIn}>
-            <Text style={styles.signInLink}>Sign In</Text>
+        {/* Sign Up Link */}
+        <View style={styles.signUpSection}>
+          <Text style={styles.signUpText}>Don't have an account? </Text>
+          <TouchableOpacity onPress={handleSignUp}>
+            <Text style={styles.signUpLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -303,70 +258,31 @@ const styles = StyleSheet.create({
   eyeIconText: {
     fontSize: 18,
   },
-  termsSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  checkbox: {
-    marginRight: 12,
-  },
-  checkboxInner: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#7e246c',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#7e246c',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  termsText: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  termsLabel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  termsLink: {
-    fontSize: 16,
-    color: '#7e246c',
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  signUpButton: {
+  signInButton: {
     backgroundColor: '#7e246c',
     borderRadius: 8,
     paddingVertical: 16,
     marginTop: 20,
     marginBottom: 30,
   },
-  signUpButtonText: {
+  signInButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
   },
-  signInSection: {
+  signUpSection: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 'auto',
     marginBottom: 20,
   },
-  signInText: {
+  signUpText: {
     fontSize: 16,
     color: '#666',
   },
-  signInLink: {
+  signUpLink: {
     fontSize: 16,
     color: '#7e246c',
     fontWeight: '600',
@@ -387,7 +303,6 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#7e246c',
-    fontWeight: '600',
+    color: '#666',
   },
 }); 

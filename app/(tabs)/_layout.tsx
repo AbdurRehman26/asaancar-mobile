@@ -1,13 +1,15 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useContext } from 'react';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthContext } from '../_layout';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { isLoggedIn } = useContext(AuthContext);
 
   return (
     <Tabs
@@ -58,29 +60,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="bookings"
         options={{
-          title: 'Explore',
+          title: 'My Bookings',
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol 
               size={24} 
-              name={focused ? "safari.fill" : "safari"} 
+              name={focused ? "doc.text.fill" : "doc.text"} 
               color={color} 
             />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="favorite"
-        options={{
-          title: 'Favorite',
-          tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={24} 
-              name={focused ? "heart.fill" : "heart"} 
-              color={color} 
-            />
-          ),
+          tabBarButton: isLoggedIn ? HapticTab : () => null,
         }}
       />
       <Tabs.Screen
@@ -94,6 +84,7 @@ export default function TabLayout() {
               color={color} 
             />
           ),
+          tabBarButton: isLoggedIn ? HapticTab : () => null,
         }}
       />
       <Tabs.Screen
@@ -107,6 +98,21 @@ export default function TabLayout() {
               color={color} 
             />
           ),
+          tabBarButton: isLoggedIn ? HapticTab : () => null,
+        }}
+      />
+      <Tabs.Screen
+        name="login"
+        options={{
+          title: 'Login',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={24} 
+              name={focused ? "person.circle.fill" : "person.circle"} 
+              color={color} 
+            />
+          ),
+          tabBarButton: !isLoggedIn ? HapticTab : () => null,
         }}
       />
     </Tabs>

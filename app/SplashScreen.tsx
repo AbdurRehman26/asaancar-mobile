@@ -1,35 +1,34 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
-
-const { width, height } = Dimensions.get('window');
+import { StyleSheet, Text, View } from 'react-native';
+import { ANIMATION, COLORS } from '../constants/Config';
 
 export default function SplashScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    // Navigate to onboarding after 3 seconds
     const timer = setTimeout(() => {
-      router.replace('/OnboardingScreen');
-    }, 3000);
+      router.replace('/LandingScreen' as any);
+    }, ANIMATION.SPLASH_DURATION);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, []);
 
   return (
     <View style={styles.container}>
-      {/* Full screen blue background */}
       <View style={styles.fullScreenCard}>
-        {/* Car icon */}
+        {/* Car Icon */}
         <View style={styles.iconContainer}>
           <Text style={styles.carIcon}>🚗</Text>
         </View>
         
-        {/* App title */}
-        <Text style={styles.title}>Car Rental</Text>
+        {/* App Name */}
+        <Text style={styles.appName}>Car Rental</Text>
         
-        {/* Home indicator bar */}
-        <View style={styles.homeIndicator} />
+        {/* Home Indicator */}
+        <View style={styles.homeIndicator}>
+          <View style={styles.indicator} />
+        </View>
       </View>
     </View>
   );
@@ -38,49 +37,48 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#7e246c',
+    backgroundColor: COLORS.PRIMARY,
   },
   fullScreenCard: {
     flex: 1,
-    backgroundColor: '#7e246c',
+    backgroundColor: COLORS.PRIMARY,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fff',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.WHITE,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   carIcon: {
     fontSize: 40,
-    color: '#7e246c',
+    color: COLORS.PRIMARY,
   },
-  title: {
+  appName: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
+    color: COLORS.WHITE,
     marginBottom: 40,
   },
   homeIndicator: {
     position: 'absolute',
     bottom: 20,
+    alignItems: 'center',
+  },
+  indicator: {
     width: 134,
     height: 5,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.WHITE,
     borderRadius: 2.5,
   },
 }); 

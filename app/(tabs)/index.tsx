@@ -1,12 +1,11 @@
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { useNavigation } from '@react-navigation/native';
-import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import apiService from '../../services/api';
 import { FilterContext } from '../_layout';
 
-const API_BASE = 'http://asaancar.test/api';
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = width - 32;
 
 const CarCard = React.memo(function CarCard({ car }: { car: any }) {
   const [imageError, setImageError] = useState(false);
@@ -23,9 +22,9 @@ const CarCard = React.memo(function CarCard({ car }: { car: any }) {
         params: { car: carData }
       });
       console.log('router.push called successfully');
-    } catch (error) {
+        } catch (error) {
       console.error('Navigation error:', error);
-    }
+          }
   };
 
   return (
@@ -35,10 +34,9 @@ const CarCard = React.memo(function CarCard({ car }: { car: any }) {
       style={styles.carCardTouchable}
     >
       <View style={styles.modernCarCard}>
-        <ExpoImage
+        <Image
           source={{ uri: 'https://picsum.photos/300/200?random=' + car.id }}
           style={styles.modernCarImage} 
-          contentFit="cover" 
           onError={() => setImageError(true)}
           onLoad={() => setImageError(false)}
         />
@@ -84,7 +82,7 @@ type DrawerParamList = {
 };
 
 export default function HomeScreen() {
-  const navigation = useNavigation<DrawerNavigationProp<DrawerParamList>>();
+  const navigation = useRouter();
   const { filters, setFilters } = useContext(FilterContext);
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -204,14 +202,8 @@ export default function HomeScreen() {
       }
     ];
 
-    // Try API first, fallback to mock data
-    fetch(`${API_BASE}/cars?${params}`)
-      .then(r => {
-        if (!r.ok) {
-          throw new Error('API not available');
-        }
-        return r.json();
-      })
+        // Try API first, fallback to mock data
+    apiService.getCars(params)
       .then(data => {
         if (Array.isArray(data)) {
           if (reset) setCars(data);
@@ -282,19 +274,19 @@ export default function HomeScreen() {
       {/* Filter pills row: show all filters, tap to open modal */}
       <View style={styles.filterBox}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView} contentContainerStyle={{ alignItems: 'center', flexDirection: 'row' }}>
-          {[
-            { key: 'duration', label: 'Duration', value: filters.duration },
-            { key: 'brand', label: 'Brand', value: filters.brand },
-            { key: 'type', label: 'Type', value: filters.type },
-            { key: 'transmission', label: 'Transmission', value: filters.transmission },
-            { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
-            { key: 'minSeat', label: 'Seats', value: filters.minSeat },
-          ].map(f => (
-            <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
-              <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {[
+          { key: 'duration', label: 'Duration', value: filters.duration },
+          { key: 'brand', label: 'Brand', value: filters.brand },
+          { key: 'type', label: 'Type', value: filters.type },
+          { key: 'transmission', label: 'Transmission', value: filters.transmission },
+          { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
+          { key: 'minSeat', label: 'Seats', value: filters.minSeat },
+        ].map(f => (
+          <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
+            <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
+          </Pressable>
+        ))}
+      </ScrollView>
       </View>
 
       {/* Modal for filter selection */}
@@ -327,43 +319,43 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Popular Cars Section - header removed */}
+        {/* Popular Cars Section - header removed */}
       <View style={{ flex: 1 }}>
-        {loading && page === 1 ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading cars...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={cars}
-            keyExtractor={(item) => item.id?.toString() || item.vin || item._id || ''}
-            renderItem={({ item }) => <CarCard car={item} />}
-            horizontal={false}
-            numColumns={1}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No cars found.</Text>
-              </View>
-            }
-            onEndReached={onEndReached}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={loadingMore ? 
-              <View style={styles.loadingMoreContainer}>
-                <Text style={styles.loadingMoreText}>Loading more...</Text>
-              </View> : null
-            }
-            style={{ flex: 1 }}
+          {loading && page === 1 ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading cars...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={cars}
+              keyExtractor={(item) => item.id?.toString() || item.vin || item._id || ''}
+              renderItem={({ item }) => <CarCard car={item} />}
+              horizontal={false}
+              numColumns={1}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No cars found.</Text>
+                </View>
+              }
+              onEndReached={onEndReached}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={loadingMore ? 
+                <View style={styles.loadingMoreContainer}>
+                  <Text style={styles.loadingMoreText}>Loading more...</Text>
+                </View> : null
+              }
+              style={{ flex: 1 }}
             showsVerticalScrollIndicator={true}
             scrollEnabled={true}
             bounces={true}
             alwaysBounceVertical={false}
-          />
-        )}
+            />
+          )}
       </View>
     </View>
   );
