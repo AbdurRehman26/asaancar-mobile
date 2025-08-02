@@ -1,12 +1,14 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AuthContext } from './_layout';
 
 export default function CarBooking() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { isLoggedIn } = useContext(AuthContext);
   
   // Parse car data from params or use default
   let car = {
@@ -29,7 +31,7 @@ export default function CarBooking() {
       car = { ...car, ...parsedCar };
     }
   } catch (error) {
-    console.log('Error parsing car data:', error);
+
   }
 
   const [bookingType, setBookingType] = useState<'self' | 'driver'>('self');
@@ -48,7 +50,6 @@ export default function CarBooking() {
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [locationPermission, setLocationPermission] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -75,7 +76,7 @@ export default function CarBooking() {
       };
       setSelectedLocation(mockLocation);
     } catch (error) {
-      console.log('Error getting location:', error);
+
       // Set default location on error
       const defaultLocation = {
         latitude: 24.8607,
@@ -92,22 +93,7 @@ export default function CarBooking() {
     }
   };
 
-  const handleMapPress = async (event: any) => {
-    try {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      
-      // For demo purposes, create a mock address
-      const mockAddress = `Selected Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
-      
-      setSelectedLocation({
-        latitude,
-        longitude,
-        address: mockAddress,
-      });
-    } catch (error) {
-      console.log('Error handling map press:', error);
-    }
-  };
+
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -124,17 +110,17 @@ export default function CarBooking() {
   };
 
   const handleBack = () => {
-    console.log('Back button pressed');
+
     try {
       // Navigate to the main screen since there's no back history
       router.replace('/(tabs)');
     } catch (error) {
-      console.log('Navigation failed:', error);
+      
       // Fallback to push if replace fails
       try {
         router.push('/(tabs)');
       } catch (pushError) {
-        console.log('Push also failed:', pushError);
+        
       }
     }
   };
@@ -158,13 +144,13 @@ export default function CarBooking() {
   const totalPrice = (bookingType === 'driver' ? car.withDriver : car.withoutDriver) * parseInt(numberOfDays || '1');
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
       {/* Modern Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => {
-            console.log('Back button TouchableOpacity pressed');
+        
             handleBack();
           }}
           activeOpacity={0.7}
@@ -442,11 +428,20 @@ export default function CarBooking() {
 
       {/* Book Now Button */}
       <View style={styles.bottomContainer}>
+        {isLoggedIn && (
+          <TouchableOpacity style={styles.chatButton} onPress={() => router.push({
+            pathname: '/(tabs)/chat',
+            params: { storeId: '1', storeName: 'Car Rental Store' }
+          })}>
+            <Text style={styles.chatButtonText}>💬 Chat</Text>
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -454,12 +449,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: 30,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
+    paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     backgroundColor: '#fff',
@@ -740,21 +736,45 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingVertical: 20,
+    paddingBottom: 40,
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   bookButton: {
     backgroundColor: '#7e246c',
     paddingVertical: 18,
+    paddingHorizontal: 32,
     borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#7e246c',
     shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+    flex: 1, // Allow book button to take available space
+  },
+  bookButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  chatButton: {
+    backgroundColor: '#4CAF50', // A green color for chat
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
+    flex: 1, // Allow chat button to take available space
+    marginRight: 10, // Add some space between chat and book buttons
   },
-  bookButtonText: {
+  chatButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',

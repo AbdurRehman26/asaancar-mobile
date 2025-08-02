@@ -56,23 +56,27 @@ class ApiService {
   private async loadAuthToken() {
     try {
       this.authToken = await this.storage.getItem(STORAGE_KEYS.USER_TOKEN);
-      console.log('Token loaded from storage:', this.authToken ? 'Available' : 'Not available');
-      if (this.authToken) {
-        console.log('Token value:', this.authToken.substring(0, 30) + '...');
-      }
     } catch (error) {
       console.error('Failed to load auth token:', error);
     }
   }
 
   private async saveAuthToken(token: string) {
+    this.authToken = token;
+    await this.storage.setItem(STORAGE_KEYS.USER_TOKEN, token);
+  }
+
+  private async saveUserData(userData: any) {
+    await this.storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(userData));
+  }
+
+  private async getUserData(): Promise<any> {
     try {
-      console.log('Saving auth token to storage:', token.substring(0, 30) + '...');
-      await this.storage.setItem(STORAGE_KEYS.USER_TOKEN, token);
-      this.authToken = token;
-      console.log('Auth token saved successfully');
+      const userData = await this.storage.getItem(STORAGE_KEYS.USER_PROFILE);
+      return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Failed to save auth token:', error);
+      console.error('Failed to get user data:', error);
+      return null;
     }
   }
 
@@ -99,9 +103,6 @@ class ApiService {
     // Add auth token if available
     if (this.authToken) {
       headers['Authorization'] = `Bearer ${this.authToken}`;
-      console.log(`Adding auth token to request: ${this.authToken.substring(0, 20)}...`);
-    } else {
-      console.log('No auth token available for request');
     }
 
     const defaultOptions: RequestInit = {
@@ -110,25 +111,24 @@ class ApiService {
     };
 
     try {
-      console.log(`Making API request to: ${url}`);
-      console.log('Request headers:', JSON.stringify(headers, null, 2));
-      console.log('Full request options:', JSON.stringify(defaultOptions, null, 2));
       const response = await fetch(url, defaultOptions);
-      
-      console.log(`Response status: ${response.status}`);
-      console.log('Response headers:', response.headers);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('API Error Response:', errorData);
+        // Only log critical errors to reduce console spam
+        if (response.status >= 500) {
+          console.error('API Error Response:', errorData);
+        }
         throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('API Response data:', data);
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      // Only log network errors in development
+      if (__DEV__) {
+        console.error('API request failed:', error);
+      }
       if (error instanceof Error) {
         throw error;
       }
@@ -149,6 +149,24 @@ class ApiService {
     
     const endpoint = `/api/cars${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.request(endpoint);
+  }
+
+  // Get car brands
+  async getCarBrands(): Promise<any[]> {
+    const response = await this.request(API_CONFIG.ENDPOINTS.CAR_BRANDS);
+    return response;
+  }
+
+  // Get car types
+  async getCarTypes(): Promise<any[]> {
+    const response = await this.request(API_CONFIG.ENDPOINTS.CAR_TYPES);
+    return response;
+  }
+
+  // Get car engines
+  async getCarEngines(): Promise<any[]> {
+    const response = await this.request(API_CONFIG.ENDPOINTS.CAR_ENGINES);
+    return response;
   }
 
   async getCarById(id: string): Promise<any> {
@@ -173,54 +191,8 @@ class ApiService {
   }
 
   async getCustomerBookings(): Promise<any[]> {
-    try {
-      const response = await this.request('/api/customer/bookings');
-      return response;
-    } catch (error) {
-      console.error('Get customer bookings API failed, using mock response:', error);
-      
-      // Mock bookings response for development
-      return [
-        {
-          id: 1,
-          car: {
-            id: 1,
-            name: 'Toyota Camry',
-            brand: 'Toyota',
-            model: 'Camry',
-            year: 2022,
-            image: 'https://via.placeholder.com/300x200',
-            price: 50,
-          },
-          status: 'confirmed',
-          startDate: '2024-01-15',
-          endDate: '2024-01-17',
-          pickupLocation: 'Downtown Office',
-          returnLocation: 'Airport Terminal',
-          totalAmount: 150,
-          createdAt: '2024-01-10T10:00:00Z',
-        },
-        {
-          id: 2,
-          car: {
-            id: 3,
-            name: 'Honda Civic',
-            brand: 'Honda',
-            model: 'Civic',
-            year: 2023,
-            image: 'https://via.placeholder.com/300x200',
-            price: 45,
-          },
-          status: 'completed',
-          startDate: '2024-01-05',
-          endDate: '2024-01-07',
-          pickupLocation: 'Shopping Mall',
-          returnLocation: 'Shopping Mall',
-          totalAmount: 135,
-          createdAt: '2024-01-01T14:30:00Z',
-        },
-      ];
-    }
+    const response = await this.request('/api/customer/bookings');
+    return response;
   }
 
   async cancelBooking(bookingId: string): Promise<any> {
@@ -231,104 +203,52 @@ class ApiService {
 
   // Authentication API calls
   async login(credentials: { email: string; password: string }): Promise<any> {
-    try {
-      const response = await this.request('/api/login', {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      });
+    const response = await this.request('/api/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
 
-      console.log('Login API response:', response);
-
-      // Save auth token if provided
-      if (response.token || response.access_token) {
-        const token = response.token || response.access_token;
-        await this.saveAuthToken(token);
-        console.log('Auth token saved successfully');
-      }
-
-      return response;
-    } catch (error) {
-      console.error('Login API failed, using mock response:', error);
-      
-      // Mock login response for development
-      const mockToken = 'mock_jwt_token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      const mockResponse = {
-        success: true,
-        token: mockToken,
-        user: {
-          id: 1,
-          name: 'Test User',
-          email: credentials.email,
-        },
-        message: 'Login successful (mock)',
-      };
-      
-      // Save the mock token
-      await this.saveAuthToken(mockToken);
-      console.log('Mock auth token saved successfully');
-      
-      return mockResponse;
+    // Save auth token if provided
+    if (response.token || response.access_token) {
+      const token = response.token || response.access_token;
+      await this.saveAuthToken(token);
     }
+
+    // Save user data if provided
+    if (response.user) {
+      await this.saveUserData(response.user);
+    }
+
+    return response;
   }
 
   async register(userData: { name: string; email: string; password: string }): Promise<any> {
-    try {
-      const response = await this.request('/api/register', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
+    const response = await this.request('/api/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
 
-      console.log('Registration API response:', response);
-
-      // Save auth token if provided
-      if (response.token || response.access_token) {
-        const token = response.token || response.access_token;
-        await this.saveAuthToken(token);
-        console.log('Auth token saved successfully');
-      }
-
-      return response;
-    } catch (error) {
-      console.error('Registration API failed, using mock response:', error);
-      
-      // Mock registration response for development
-      const mockToken = 'mock_jwt_token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      const mockResponse = {
-        success: true,
-        token: mockToken,
-        user: {
-          id: 2,
-          name: userData.name,
-          email: userData.email,
-        },
-        message: 'Registration successful (mock)',
-      };
-      
-      // Save the mock token
-      await this.saveAuthToken(mockToken);
-      console.log('Mock auth token saved successfully');
-      
-      return mockResponse;
+    // Save auth token if provided
+    if (response.token || response.access_token) {
+      const token = response.token || response.access_token;
+      await this.saveAuthToken(token);
     }
+
+    // Save user data if provided
+    if (response.user) {
+      await this.saveUserData(response.user);
+    }
+
+    return response;
   }
 
   async resetPassword(email: string): Promise<any> {
-    try {
-      const response = await this.request('/api/reset-password', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-      });
+    const response = await this.request('/api/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
 
-      return response;
-    } catch (error) {
-      console.log('Reset password API failed, using mock response:', error);
-      
-      // Mock reset password for development
-      return {
-        success: true,
-        message: 'Password reset email sent (mock)',
-      };
-    }
+    return response;
   }
 
   async logout(): Promise<any> {
@@ -350,8 +270,18 @@ class ApiService {
   }
 
   // Get current auth token
-  getAuthToken(): string | null {
-    return this.authToken;
+  async getCurrentToken(): Promise<string | null> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return localStorage.getItem('authToken');
+      } else {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        return await AsyncStorage.getItem('authToken');
+      }
+    } catch (error) {
+      console.error('Failed to get current token:', error);
+      return null;
+    }
   }
 
   // Check authentication status (async version for initialization)
@@ -369,60 +299,96 @@ class ApiService {
   async refreshToken(): Promise<void> {
     try {
       await this.loadAuthToken();
-      console.log('Token refreshed:', this.authToken ? 'Available' : 'Not available');
     } catch (error) {
       console.error('Failed to refresh token:', error);
     }
   }
 
-  // Get current token (with refresh)
-  async getCurrentToken(): Promise<string | null> {
-    await this.refreshToken();
-    return this.authToken;
-  }
-
-  // Debug method to check token status
-  async debugTokenStatus(): Promise<void> {
-    console.log('=== Token Debug Info ===');
-    console.log('Current authToken in memory:', this.authToken ? 'Available' : 'Not available');
-    if (this.authToken) {
-      console.log('Token value:', this.authToken.substring(0, 30) + '...');
-    }
-    
-    try {
-      const storedToken = await this.storage.getItem(STORAGE_KEYS.USER_TOKEN);
-      console.log('Token in storage:', storedToken ? 'Available' : 'Not available');
-      if (storedToken) {
-        console.log('Stored token value:', storedToken.substring(0, 30) + '...');
-      }
-    } catch (error) {
-      console.error('Error reading from storage:', error);
-    }
-    console.log('=== End Token Debug ===');
-  }
-
   // User profile API calls
   async getUserProfile(userId: string): Promise<any> {
-    return this.request(`/users/${userId}`);
+    const response = await this.request(`/users/${userId}`);
+    return response;
+  }
+
+  async getCurrentUserData(): Promise<any> {
+    return await this.getUserData();
   }
 
   async updateUserProfile(userId: string, profileData: any): Promise<any> {
-    return this.request(`/users/${userId}`, {
+    const response = await this.request(`/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
+    
+    // Save updated user data locally
+    await this.saveUserData(profileData);
+    
+    return response;
   }
 
   // Chat API calls
-  async getChats(userId: string): Promise<any[]> {
-    return this.request(`/chats?userId=${userId}`);
+  async getConversations(): Promise<any[]> {
+    const response = await this.request('/api/chat/conversations');
+    return response;
   }
 
-  async sendMessage(chatId: string, message: string): Promise<any> {
-    return this.request(`/chats/${chatId}/messages`, {
+  async createConversation(storeId: number): Promise<any> {
+    const response = await this.request('/api/chat/conversations', {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ 
+        store_id: storeId,
+        user_id: null, // Will be set by backend from auth token
+        type: 'store',
+        status: 'active'
+      }),
     });
+    
+    // Check if response is successful and has required data
+    if (response && (response.id || response.conversation_id)) {
+      return {
+        id: response.id || response.conversation_id,
+        store_id: storeId,
+        user_id: response.user_id || null,
+        type: response.type || 'store',
+        status: response.status || 'active',
+        created_at: response.created_at || new Date().toISOString(),
+        updated_at: response.updated_at || new Date().toISOString(),
+      };
+    } else {
+      throw new Error('Invalid response from conversation API');
+    }
+  }
+
+  async getMessages(conversationId: number): Promise<any[]> {
+    const response = await this.request(`/api/chat/conversations/${conversationId}/messages`);
+    return response;
+  }
+
+  async sendMessage(conversationId: number, message: string): Promise<any> {
+    const response = await this.request(`/api/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        message: message,
+        sender_type: 'user',
+        conversation_id: conversationId
+      }),
+    });
+
+    // Trigger Pusher event for real-time messaging
+    try {
+      const pusherService = (await import('./pusher')).default;
+      if (pusherService.isConnected()) {
+        pusherService.sendMessage(conversationId.toString(), {
+          ...response,
+          conversation_id: conversationId,
+        });
+      }
+    } catch (pusherError) {
+      console.error('Pusher error:', pusherError);
+      // Continue without Pusher if it fails
+    }
+
+    return response;
   }
 
   // Location API calls

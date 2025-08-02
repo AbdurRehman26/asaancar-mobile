@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES, VALIDATION } from '../constants/Config';
+import { ERROR_MESSAGES, VALIDATION } from '../constants/Config';
 import apiService from '../services/api';
 import { AuthContext } from './_layout';
 
@@ -60,21 +60,29 @@ export default function CreateAccount() {
         password: password,
       });
 
-      console.log('Registration successful:', response);
-      
       // Check if registration was successful
       if (response.success || response.token || response.access_token || response.user) {
         // Set authentication state
         login();
-        console.log('Auth state updated, navigating to car listing...');
         
-        // Navigate immediately to car listing page
+        // Navigate to car listing page
         router.replace('/(tabs)');
-        console.log('Navigation command sent');
+        
+        // Reinitialize Pusher with new auth token
+        try {
+          const pusherService = (await import('../services/pusher')).default;
+          // Get the token from the response
+          const token = response.token || response.access_token;
+          if (token) {
+            await pusherService.updateAuthToken(token);
+          }
+        } catch (error) {
+          console.error('Failed to reinitialize Pusher after registration:', error);
+        }
         
         // Show success message after navigation
         setTimeout(() => {
-          Alert.alert('Success', SUCCESS_MESSAGES.SIGNUP_SUCCESS);
+          Alert.alert('Success', 'Account created successfully!');
         }, 100);
       } else {
         throw new Error('Registration failed - invalid response');

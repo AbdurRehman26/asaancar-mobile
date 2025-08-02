@@ -3,6 +3,39 @@ export const API_CONFIG = {
   BASE_URL: 'http://asaancar.test',
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
+  ENDPOINTS: {
+    CARS: '/api/cars',
+    CAR_BRANDS: '/api/car-brands',
+    CAR_TYPES: '/api/car-types',
+    CAR_ENGINES: '/api/car-engines',
+    LOGIN: '/api/login',
+    REGISTER: '/api/register',
+    LOGOUT: '/api/logout',
+    RESET_PASSWORD: '/api/reset-password',
+    CUSTOMER_BOOKINGS: '/api/customer/bookings',
+    CHAT_CONVERSATIONS: '/api/chat/conversations',
+    CHAT_MESSAGES: '/api/chat/conversations/{conversation}/messages',
+  },
+};
+
+export const PUSHER_CONFIG = {
+  APP_ID: '2001262',
+  KEY: '6813ba0d0d720f1687be',
+  SECRET: '80494239cfcf8928d925',
+  CLUSTER: 'eu',
+  FORCE_TLS: true,
+  PORT: 443,
+  SCHEME: 'https',
+  CHANNELS: {
+    CHAT: 'chat',
+    PRIVATE_CHAT: 'private-chat',
+  },
+  EVENTS: {
+    MESSAGE_SENT: 'message-sent',
+    MESSAGE_RECEIVED: 'message-received',
+    TYPING: 'typing',
+    STOP_TYPING: 'stop-typing',
+  },
 };
 
 // Google Maps Configuration

@@ -1,29 +1,32 @@
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useContext, useEffect } from 'react';
+import { Dimensions, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { AuthContext } from './_layout';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LandingScreen() {
   const router = useRouter();
+  const { isLoggedIn } = useContext(AuthContext);
+
+  // Check if user is already logged in and redirect
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.replace('/(tabs)');
+    }
+  }, [isLoggedIn]);
 
   const handleGetStarted = () => {
     router.replace('/(tabs)');
   };
 
-  const handleSignIn = () => {
-    router.push('/SignIn');
+  const handleLogin = () => {
+    router.push('/LoginScreen');
   };
 
   return (
-    <View style={styles.container}>
-      {/* Status Bar */}
-      <View style={styles.statusBar}>
-        <Text style={styles.statusText}>📶 📶 📶</Text>
-        <Text style={styles.statusText}>📶</Text>
-        <Text style={styles.statusText}>🔋</Text>
-      </View>
-
+    <SafeAreaView style={styles.container}>
       {/* Floating Tags */}
       <View style={styles.floatingTags}>
         <View style={styles.tag}>
@@ -59,22 +62,26 @@ export default function LandingScreen() {
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
         </Text>
 
-        {/* Call to Action Button */}
-        <TouchableOpacity style={styles.getStartedButton} onPress={handleGetStarted}>
-          <Text style={styles.buttonText}>Let's Get Started</Text>
-        </TouchableOpacity>
-
-        {/* Sign In Link */}
-        <TouchableOpacity onPress={handleSignIn}>
-          <Text style={styles.signInText}>
-            Already have an account? <Text style={styles.signInLink}>Sign In</Text>
-          </Text>
-        </TouchableOpacity>
+        {/* Call to Action Buttons */}
+        {isLoggedIn ? (
+          <TouchableOpacity style={styles.getStartedButton} onPress={handleGetStarted}>
+            <Text style={styles.buttonText}>Let's Get Started</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.getStartedButton} onPress={handleGetStarted}>
+              <Text style={styles.buttonText}>Let's Get Started</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.loginLink} onPress={handleLogin}>
+              <Text style={styles.loginLinkText}>Already have an account? Login</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Home Indicator */}
       <View style={styles.homeIndicator} />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -82,18 +89,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 20,
   },
-  statusBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 5,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#000',
-  },
+
   floatingTags: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -138,7 +136,7 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     paddingHorizontal: 30,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -179,14 +177,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  signInText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#666',
+  buttonContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  signInLink: {
+  loginLink: {
+    marginTop: 15,
+  },
+  loginLinkText: {
     color: '#7e246c',
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   homeIndicator: {
     width: 134,

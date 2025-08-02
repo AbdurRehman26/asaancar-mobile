@@ -4,11 +4,9 @@ import React, { useContext } from 'react';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthContext } from '../_layout';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { isLoggedIn } = useContext(AuthContext);
 
   return (
@@ -22,25 +20,20 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopWidth: 0,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          height: 90,
-          paddingBottom: 20,
-          paddingTop: 10,
+          height: 100,
+          paddingBottom: 60,
+          paddingTop: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
           elevation: 10,
-            position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '500',
-          marginTop: 4,
+          fontWeight: '600',
+          marginTop: 2,
+          color: '#7e246c',
         },
         tabBarIconStyle: {
           marginTop: 4,
@@ -62,15 +55,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="bookings"
         options={{
-          title: 'My Bookings',
+          title: 'Bookings',
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol 
               size={24} 
-              name={focused ? "doc.text.fill" : "doc.text"} 
+              name={focused ? "calendar.fill" : "calendar"} 
               color={color} 
             />
           ),
-          tabBarButton: isLoggedIn ? HapticTab : () => null,
+          href: isLoggedIn ? undefined : null,
         }}
       />
       <Tabs.Screen
@@ -84,21 +77,21 @@ export default function TabLayout() {
               color={color} 
             />
           ),
-          tabBarButton: isLoggedIn ? HapticTab : () => null,
+          href: isLoggedIn ? undefined : null,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="settings"
         options={{
-          title: 'Profile',
+          title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol 
               size={24} 
-              name={focused ? "person.fill" : "person"} 
+              name={focused ? "gearshape.fill" : "gearshape"} 
               color={color} 
             />
           ),
-          tabBarButton: isLoggedIn ? HapticTab : () => null,
+          href: isLoggedIn ? undefined : null,
         }}
       />
       <Tabs.Screen
@@ -108,11 +101,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol 
               size={24} 
-              name={focused ? "person.circle.fill" : "person.circle"} 
+              name={focused ? "person.badge.plus.fill" : "person.badge.plus"} 
               color={color} 
             />
           ),
-          tabBarButton: !isLoggedIn ? HapticTab : () => null,
+          href: !isLoggedIn ? undefined : null,
         }}
       />
     </Tabs>

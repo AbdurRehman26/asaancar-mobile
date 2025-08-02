@@ -5,9 +5,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import 'react-native-reanimated';
+
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -59,6 +60,41 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
   const [fuelTypeValue, setFuelTypeValue] = useState(filters.fuelType);
   const [minSeatValue, setMinSeatValue] = useState(filters.minSeat);
 
+  // API data state
+  const [brands, setBrands] = useState<any[]>([]);
+  const [carTypes, setCarTypes] = useState<any[]>([]);
+  const [carEngines, setCarEngines] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch API data on component mount
+  React.useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        setIsLoading(true);
+        const apiService = (await import('../services/api')).default;
+        
+        const [brandsData, typesData, enginesData] = await Promise.all([
+          apiService.getCarBrands(),
+          apiService.getCarTypes(),
+          apiService.getCarEngines(),
+        ]);
+        
+        setBrands(brandsData || []);
+        setCarTypes(typesData || []);
+        setCarEngines(enginesData || []);
+      } catch (error) {
+        // Set empty arrays as fallback
+        setBrands([]);
+        setCarTypes([]);
+        setCarEngines([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFilterData();
+  }, []);
+
   // Sync local dropdown value with context when filters change
   React.useEffect(() => { setDurationValue(filters.duration); }, [filters.duration]);
   React.useEffect(() => { setBrandValue(filters.brand); }, [filters.brand]);
@@ -73,20 +109,30 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
 
   // Options (should be fetched or passed as props in a real app)
   const durations = ['Hourly', 'Daily', 'Weekly'];
-  const brandOptions = ['All Brands', 'Toyota', 'Honda', 'BMW', 'Mercedes', 'Audi'];
-  const typeOptions = ['All Types', 'Sedan', 'SUV', 'Truck', 'Hatchback', 'Coupe'];
   const transmissionOptions = ['All', 'Automatic', 'Manual'];
-  const fuelTypeOptions = ['All', 'Petrol', 'Diesel', 'Electric', 'Hybrid'];
   const minSeatOptions = ['Any', '2', '4', '5', '7', '8'];
 
   // Dropdown items
   const filterValidItems = (arr: any[]) => arr.filter(item => typeof item.label === 'string' && item.label.trim() !== '' && typeof item.value === 'string' && item.value.trim() !== '');
   const durationItems = filterValidItems(durations.map((d) => ({ label: d, value: d })));
-  const brandItems = filterValidItems(brandOptions.map((b) => ({ label: b, value: b })));
-  const typeItems = filterValidItems(typeOptions.map((t) => ({ label: t, value: t })));
   const transmissionItems = filterValidItems(transmissionOptions.map((t) => ({ label: t, value: t })));
-  const fuelTypeItems = filterValidItems(fuelTypeOptions.map((f) => ({ label: f, value: f })));
   const minSeatItems = filterValidItems(minSeatOptions.map((s) => ({ label: s, value: s })));
+
+  // Convert API data to dropdown items
+  const brandItems = [
+    { label: 'All Brands', value: 'All Brands' },
+    ...brands.map(brand => ({ label: brand.name, value: brand.name }))
+  ];
+  
+  const typeItems = [
+    { label: 'All Types', value: 'All Types' },
+    ...carTypes.map(type => ({ label: type.name, value: type.name }))
+  ];
+  
+  const fuelTypeItems = [
+    { label: 'All', value: 'All' },
+    ...carEngines.map(engine => ({ label: engine.name, value: engine.name }))
+  ];
 
   // Handlers for updating filter context
   const updateFilter = (key: string, value: any) => {
@@ -121,7 +167,14 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
         </TouchableOpacity>
         <Text style={{ fontWeight: 'bold', fontSize: 22, color: '#222' }}>Filters</Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+      
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#7e246c" />
+          <Text style={{ marginTop: 10, color: '#666' }}>Loading filters...</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 10, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
         {/* Duration Dropdown */}
         <Text style={{ fontWeight: '700', fontSize: 15, color: '#222', marginBottom: 6 }}>Duration</Text>
         <View style={{ zIndex: 6000 }}>
@@ -278,6 +331,7 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
           </TouchableOpacity>
         </View>
       </ScrollView>
+      )}
       {/* Render pickers at the root, outside ScrollView */}
       {Platform.OS !== 'web' && showDatePicker && (
         <DateTimePicker
@@ -327,10 +381,12 @@ export default function RootLayout() {
           setIsLoggedIn(true);
         }
       } catch (error) {
-        console.error('Failed to check auth status:', error);
+        // Silently handle auth check errors to prevent console spam
+        // console.error('Failed to check auth status:', error);
       }
     };
     
+    // Only check auth status once on mount
     checkAuthStatus();
   }, []);
 
@@ -375,23 +431,23 @@ export default function RootLayout() {
 
   return (
     <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
-      <FilterContext.Provider value={filterContextValue}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="OnboardingScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="LandingScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="SplashScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="CarBooking" options={{ headerShown: false }} />
-                  <Stack.Screen name="CreateAccount" options={{ headerShown: false }} />
-                  <Stack.Screen name="SignIn" options={{ headerShown: false }} />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </FilterContext.Provider>
+              <FilterContext.Provider value={filterContextValue}>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="OnboardingScreen" options={{ headerShown: false }} />
+              <Stack.Screen name="LandingScreen" options={{ headerShown: false }} />
+              <Stack.Screen name="SplashScreen" options={{ headerShown: false }} />
+              <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="CarBooking" options={{ headerShown: false }} />
+              <Stack.Screen name="CreateAccount" options={{ headerShown: false }} />
+              <Stack.Screen name="SignIn" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </FilterContext.Provider>
     </AuthContext.Provider>
   );
 }

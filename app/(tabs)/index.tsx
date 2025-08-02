@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
-import { Dimensions, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import apiService from '../../services/api';
 import { FilterContext } from '../_layout';
 
@@ -12,19 +12,15 @@ const CarCard = React.memo(function CarCard({ car }: { car: any }) {
   const router = useRouter();
 
   const handlePress = () => {
-    console.log('Car card tapped!', car.name);
-    console.log('Attempting navigation to CarBooking...');
     try {
       const carData = JSON.stringify(car);
-      console.log('Car data to pass:', carData);
       router.push({
         pathname: '/CarBooking',
         params: { car: carData }
       });
-      console.log('router.push called successfully');
-        } catch (error) {
+    } catch (error) {
       console.error('Navigation error:', error);
-          }
+    }
   };
 
   return (
@@ -82,7 +78,6 @@ type DrawerParamList = {
 };
 
 export default function HomeScreen() {
-  const navigation = useRouter();
   const { filters, setFilters } = useContext(FilterContext);
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -115,6 +110,7 @@ export default function HomeScreen() {
       setLoadingMore(true);
     }
     setError(null);
+    
     // Build query params
     const params = new URLSearchParams({
       duration: filters.duration,
@@ -128,6 +124,7 @@ export default function HomeScreen() {
       maxPrice: filters.maxPrice,
       page: reset ? '1' : (page + 1).toString(),
     });
+    
     // For testing, use mock data if API fails
     const mockCars = [
       {
@@ -202,7 +199,7 @@ export default function HomeScreen() {
       }
     ];
 
-        // Try API first, fallback to mock data
+    // Try API first, fallback to mock data
     apiService.getCars(params)
       .then(data => {
         if (Array.isArray(data)) {
@@ -224,8 +221,7 @@ export default function HomeScreen() {
         setPage(reset ? 1 : page + 1);
       })
       .catch((error) => {
-        console.log('API failed, using mock data:', error);
-        // Use mock data for testing
+        // Silently use mock data for testing - reduce console spam
         if (reset) {
           setCars(mockCars);
           setHasMore(true);
@@ -255,109 +251,111 @@ export default function HomeScreen() {
 
 
   return (
-    <View style={styles.container}>
-      {/* Header with location and search */}
-      <View style={styles.header}>
-        {/* Removed locationSection */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
-              placeholderTextColor="#999"
-            />
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <View style={styles.container}>
+        {/* Header with location and search */}
+        <View style={styles.header}>
+          {/* Removed locationSection */}
+          <View style={styles.searchSection}>
+            <View style={styles.searchBar}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search"
+                placeholderTextColor="#999"
+              />
+            </View>
           </View>
-        </View>
-      </View> {/* End of header */}
+        </View> {/* End of header */}
 
-      {/* Filter pills row: show all filters, tap to open modal */}
-      <View style={styles.filterBox}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView} contentContainerStyle={{ alignItems: 'center', flexDirection: 'row' }}>
-        {[
-          { key: 'duration', label: 'Duration', value: filters.duration },
-          { key: 'brand', label: 'Brand', value: filters.brand },
-          { key: 'type', label: 'Type', value: filters.type },
-          { key: 'transmission', label: 'Transmission', value: filters.transmission },
-          { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
-          { key: 'minSeat', label: 'Seats', value: filters.minSeat },
-        ].map(f => (
-          <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
-            <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-      </View>
-
-      {/* Modal for filter selection */}
-      <Modal
-        visible={!!openFilter}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setOpenFilter(null)}
-      >
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} onPress={() => setOpenFilter(null)} />
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 24 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#7e246c', marginBottom: 16 }}>
-            Select {openFilter && ([{ key: 'duration', label: 'Duration' }, { key: 'brand', label: 'Brand' }, { key: 'type', label: 'Type' }, { key: 'transmission', label: 'Transmission' }, { key: 'fuelType', label: 'Fuel' }, { key: 'minSeat', label: 'Seats' }].find(f => f.key === openFilter)?.label)}
-          </Text>
-          {openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
-            <TouchableOpacity
-              key={option}
-              style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
-              onPress={() => {
-                setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
-                setOpenFilter(null);
-              }}
-            >
-              <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
-            </TouchableOpacity>
+        {/* Filter pills row: show all filters, tap to open modal */}
+        <View style={styles.filterBox}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView} contentContainerStyle={{ alignItems: 'center', flexDirection: 'row', paddingHorizontal: 0 }}>
+          {[
+            { key: 'duration', label: 'Duration', value: filters.duration },
+            { key: 'brand', label: 'Brand', value: filters.brand },
+            { key: 'type', label: 'Type', value: filters.type },
+            { key: 'transmission', label: 'Transmission', value: filters.transmission },
+            { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
+            { key: 'minSeat', label: 'Seats', value: filters.minSeat },
+          ].map(f => (
+            <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
+              <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
+            </Pressable>
           ))}
-          <TouchableOpacity onPress={() => setOpenFilter(null)} style={{ marginTop: 18, alignSelf: 'center' }}>
-            <Text style={{ color: '#7e246c', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
-          </TouchableOpacity>
+        </ScrollView>
         </View>
-      </Modal>
 
-        {/* Popular Cars Section - header removed */}
-      <View style={{ flex: 1 }}>
-          {loading && page === 1 ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading cars...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={cars}
-              keyExtractor={(item) => item.id?.toString() || item.vin || item._id || ''}
-              renderItem={({ item }) => <CarCard car={item} />}
-              horizontal={false}
-              numColumns={1}
-              contentContainerStyle={styles.listContent}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No cars found.</Text>
-                </View>
-              }
-              onEndReached={onEndReached}
-              onEndReachedThreshold={0.5}
-              ListFooterComponent={loadingMore ? 
-                <View style={styles.loadingMoreContainer}>
-                  <Text style={styles.loadingMoreText}>Loading more...</Text>
-                </View> : null
-              }
-              style={{ flex: 1 }}
-            showsVerticalScrollIndicator={true}
-            scrollEnabled={true}
-            bounces={true}
-            alwaysBounceVertical={false}
-            />
-          )}
+        {/* Modal for filter selection */}
+        <Modal
+          visible={!!openFilter}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setOpenFilter(null)}
+        >
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} onPress={() => setOpenFilter(null)} />
+          <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 24 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#7e246c', marginBottom: 16 }}>
+              Select {openFilter && ([{ key: 'duration', label: 'Duration' }, { key: 'brand', label: 'Brand' }, { key: 'type', label: 'Type' }, { key: 'transmission', label: 'Transmission' }, { key: 'fuelType', label: 'Fuel' }, { key: 'minSeat', label: 'Seats' }].find(f => f.key === openFilter)?.label)}
+            </Text>
+            {openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
+              <TouchableOpacity
+                key={option}
+                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
+                onPress={() => {
+                  setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
+                  setOpenFilter(null);
+                }}
+              >
+                <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setOpenFilter(null)} style={{ marginTop: 18, alignSelf: 'center' }}>
+              <Text style={{ color: '#7e246c', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
+          {/* Popular Cars Section - header removed */}
+        <View style={{ flex: 1 }}>
+            {loading && page === 1 ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading cars...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={cars}
+                keyExtractor={(item) => `car-${item.id || item.vin || item._id || Math.random()}`}
+                renderItem={({ item }) => <CarCard car={item} />}
+                horizontal={false}
+                numColumns={1}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No cars found.</Text>
+                  </View>
+                }
+                onEndReached={onEndReached}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={loadingMore ? 
+                  <View style={styles.loadingMoreContainer}>
+                    <Text style={styles.loadingMoreText}>Loading more...</Text>
+                  </View> : null
+                }
+                style={{ flex: 1 }}
+              showsVerticalScrollIndicator={true}
+              scrollEnabled={true}
+              bounces={true}
+              alwaysBounceVertical={false}
+              />
+            )}
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -407,7 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    marginBottom: 0,
+    marginBottom: -4,
   },
   searchBar: {
     flex: 1,
@@ -415,8 +413,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
     marginRight: 16, // Add margin between search and filter icon
   },
   searchIcon: {
@@ -610,15 +608,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filterBox: {
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderRadius: 16,
-    padding: 20,
+    padding: 0,
     marginHorizontal: 16,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    marginTop: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   filterRow: {
     flexDirection: 'row',
@@ -734,7 +732,7 @@ pickerItem: {
   fontSize: 15,
   color: '#222',
 },
-filterBox: {
+filterBoxTransparent: {
     backgroundColor: 'transparent',
     borderRadius: 12,
     marginHorizontal: 16,
@@ -759,10 +757,10 @@ filterBox: {
   },
   filterTag: {
     borderRadius: 16,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 8,
-    marginBottom: 2,
+    marginBottom: 0,
     borderWidth: 1,
     borderColor: '#7e246c',
     alignSelf: 'flex-start',

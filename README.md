@@ -1,50 +1,124 @@
-# Welcome to your Expo app 👋
+# AsaanCar Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native car rental application with real-time chat functionality.
 
-## Get started
+## Features
 
-1. Install dependencies
+- Car listing and booking
+- User authentication
+- Real-time chat with stores
+- Booking management
+- Filter and search functionality
 
+## Setup
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- Pusher account for real-time chat
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
-   ```bash
-   npx expo start
+3. Configure Pusher for real-time chat:
+   - Sign up at [pusher.com](https://pusher.com)
+   - Create a new app
+   - Update `constants/Config.ts` with your Pusher credentials:
+   ```typescript
+   export const PUSHER_CONFIG = {
+     APP_ID: 'your-pusher-app-id',
+     KEY: 'your-pusher-key',
+     SECRET: 'your-pusher-secret',
+     CLUSTER: 'ap1', // or your preferred cluster
+     FORCE_TLS: true,
+   };
    ```
 
-In the output, you'll find options to open the app in a
+4. Start the development server:
+   ```bash
+   npm start
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Real-time Chat Features
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Pusher Integration**: Real-time messaging using Pusher
+- **Typing Indicators**: Shows when users are typing
+- **Message History**: Loads previous messages
+- **Auto-scroll**: Messages automatically scroll to bottom
+- **Offline Support**: Messages are cached and synced when online
 
-## Get a fresh project
+## API Endpoints
 
-When you're ready, run:
+- `POST /api/login` - User authentication
+- `POST /api/register` - User registration
+- `GET /api/cars` - Get car listings
+- `GET /api/customer/bookings` - Get user bookings
+- `GET /api/chat/conversations` - Get chat conversations
+- `POST /api/chat/conversations` - Create new conversation
+- `GET /api/chat/conversations/{id}/messages` - Get messages
+- `POST /api/chat/conversations/{id}/messages` - Send message
 
+## Chat Implementation
+
+The chat system uses:
+- **Pusher Channels**: For real-time message delivery
+- **Private Channels**: Secure communication between users and stores
+- **Typing Events**: Real-time typing indicators
+- **Message Persistence**: Messages stored in database
+- **Optimistic Updates**: UI updates immediately for better UX
+
+## Development
+
+- Run on web: `npm run web`
+- Run on iOS: `npm run ios`
+- Run on Android: `npm run android`
+
+## CORS Configuration
+
+To fix CORS errors with Pusher authentication, add the following to your Laravel backend:
+
+### 1. Install CORS package (if not already installed):
 ```bash
-npm run reset-project
+composer require fruitcake/laravel-cors
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Publish the config:
+```bash
+php artisan vendor:publish --provider="Fruitcake\Cors\CorsServiceProvider"
+```
 
-## Learn more
+### 3. Update `config/cors.php`:
+```php
+return [
+    'paths' => ['api/*', 'broadcasting/*'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => ['*'], // In production, specify your domain
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
+    'exposed_headers' => [],
+    'max_age' => 0,
+    'supports_credentials' => true,
+];
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### 4. Add CORS middleware to your routes in `app/Http/Kernel.php`:
+```php
+protected $middleware = [
+    // ... other middleware
+    \Fruitcake\Cors\HandleCors::class,
+];
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 5. For broadcasting routes specifically, add in `routes/web.php`:
+```php
+Route::post('/broadcasting/auth', function (Request $request) {
+    // Your broadcasting auth logic
+})->middleware('cors');
+```

@@ -1,6 +1,15 @@
 import { useRouter } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { COLORS } from '../../constants/Config';
 import apiService from '../../services/api';
 import { AuthContext } from '../_layout';
@@ -36,63 +45,45 @@ export default function BookingsScreen() {
 
       // Refresh token before making API call
       await apiService.refreshToken();
-      
-      // Debug token status
-      await apiService.debugTokenStatus();
 
       const response = await apiService.getCustomerBookings();
-      console.log('Bookings API response:', response);
-
-      if (Array.isArray(response)) {
+      
+      if (response && Array.isArray(response)) {
         setBookings(response);
-      } else if (response && typeof response === 'object' && Array.isArray((response as any).bookings)) {
+      } else if (response && typeof response === 'object' && (response as any).bookings) {
         setBookings((response as any).bookings);
-      } else if (response && typeof response === 'object' && Array.isArray((response as any).data)) {
+      } else if (response && typeof response === 'object' && (response as any).data) {
         setBookings((response as any).data);
       } else {
         setBookings([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to fetch bookings:', error);
-      setError(error.message || 'Failed to load bookings');
-      
-      // Show mock data for development
-      const mockBookings: Booking[] = [
+      // Use mock data as fallback
+      setBookings([
         {
           id: '1',
           car_name: 'Toyota Camry',
           car_brand: 'Toyota',
           start_date: '2024-01-15',
           end_date: '2024-01-17',
-          total_amount: 4500,
+          total_amount: 150,
           status: 'confirmed',
-          pickup_location: 'Karachi Airport',
-          return_location: 'Karachi Airport',
+          pickup_location: 'Downtown Office',
+          return_location: 'Airport Terminal',
         },
         {
           id: '2',
           car_name: 'Honda Civic',
           car_brand: 'Honda',
-          start_date: '2024-01-20',
-          end_date: '2024-01-22',
-          total_amount: 3600,
-          status: 'pending',
-          pickup_location: 'Lahore City Center',
-          return_location: 'Lahore City Center',
-        },
-        {
-          id: '3',
-          car_name: 'BMW X5',
-          car_brand: 'BMW',
-          start_date: '2024-01-25',
-          end_date: '2024-01-28',
-          total_amount: 12000,
+          start_date: '2024-01-05',
+          end_date: '2024-01-07',
+          total_amount: 135,
           status: 'completed',
-          pickup_location: 'Islamabad Airport',
-          return_location: 'Islamabad Airport',
+          pickup_location: 'Shopping Mall',
+          return_location: 'Shopping Mall',
         },
-      ];
-      setBookings(mockBookings);
+      ]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -148,55 +139,68 @@ export default function BookingsScreen() {
     });
   };
 
-  const renderBookingItem = ({ item }: { item: Booking }) => (
-    <TouchableOpacity style={styles.bookingCard}>
+  const handleChatWithStore = (storeId: number, storeName: string) => {
+    // Navigate to chat screen with store info
+    router.push({
+      pathname: '/(tabs)/chat',
+      params: { storeId: storeId.toString(), storeName }
+    });
+  };
+
+  const renderBookingCard = ({ item }: { item: Booking }) => (
+    <View style={styles.bookingCard}>
       <View style={styles.bookingHeader}>
-        <Text style={styles.carName}>{item.car_brand} {item.car_name}</Text>
+        <Text style={styles.carName}>{item.car_name}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+          <Text style={styles.statusText}>{item.status}</Text>
         </View>
       </View>
-
+      
       <View style={styles.bookingDetails}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Booking ID:</Text>
-          <Text style={styles.detailValue}>#{item.id}</Text>
-        </View>
-        
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Dates:</Text>
           <Text style={styles.detailValue}>
-            {formatDate(item.start_date)} - {formatDate(item.end_date)}
+            {item.start_date} - {item.end_date}
           </Text>
         </View>
-
+        
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Pickup:</Text>
           <Text style={styles.detailValue}>{item.pickup_location}</Text>
         </View>
-
+        
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Return:</Text>
           <Text style={styles.detailValue}>{item.return_location}</Text>
         </View>
-
+        
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Total:</Text>
-          <Text style={styles.totalAmount}>₨{item.total_amount.toLocaleString()}</Text>
+          <Text style={styles.totalAmount}>₨{item.total_amount}</Text>
         </View>
       </View>
-
+      
       <View style={styles.bookingActions}>
         <TouchableOpacity style={styles.actionButton}>
           <Text style={styles.actionButtonText}>View Details</Text>
         </TouchableOpacity>
-        {item.status === 'pending' && (
+        
+        {isLoggedIn && (
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.chatButton]}
+            onPress={() => handleChatWithStore(1, 'Car Rental Store')} // Using store ID 1 for demo
+          >
+            <Text style={styles.chatButtonText}>💬 Chat</Text>
+          </TouchableOpacity>
+        )}
+        
+        {item.status === 'confirmed' && (
           <TouchableOpacity style={[styles.actionButton, styles.cancelButton]}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         )}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (!isLoggedIn) {
@@ -216,10 +220,12 @@ export default function BookingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Bookings</Text>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>My Bookings</Text>
+        </View>
 
       {loading ? (
         <View style={styles.centerContent}>
@@ -244,8 +250,8 @@ export default function BookingsScreen() {
       ) : (
         <FlatList
           data={bookings}
-          renderItem={renderBookingItem}
-          keyExtractor={(item) => item.id}
+          renderItem={renderBookingCard}
+          keyExtractor={(item) => `booking-${item.id}`}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -254,6 +260,7 @@ export default function BookingsScreen() {
         />
       )}
     </View>
+    </SafeAreaView>
   );
 }
 
@@ -423,6 +430,14 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: COLORS.WHITE,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chatButton: {
+    backgroundColor: '#2196F3',
+  },
+  chatButtonText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
