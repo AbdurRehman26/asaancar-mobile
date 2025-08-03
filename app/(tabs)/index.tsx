@@ -18,9 +18,9 @@ const CarCard = React.memo(function CarCard({ car }: { car: any }) {
         pathname: '/CarBooking',
         params: { car: carData }
       });
-    } catch (error) {
+        } catch (error) {
       console.error('Navigation error:', error);
-    }
+          }
   };
 
   return (
@@ -252,107 +252,107 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View style={styles.container}>
-        {/* Header with location and search */}
-        <View style={styles.header}>
-          {/* Removed locationSection */}
-          <View style={styles.searchSection}>
-            <View style={styles.searchBar}>
-              <Text style={styles.searchIcon}>🔍</Text>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search"
-                placeholderTextColor="#999"
-              />
-            </View>
+    <View style={styles.container}>
+      {/* Header with location and search */}
+      <View style={styles.header}>
+        {/* Removed locationSection */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchBar}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search"
+              placeholderTextColor="#999"
+            />
           </View>
-        </View> {/* End of header */}
+        </View>
+      </View> {/* End of header */}
 
-        {/* Filter pills row: show all filters, tap to open modal */}
+      {/* Filter pills row: show all filters, tap to open modal */}
         <View style={styles.filterBox}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView} contentContainerStyle={{ alignItems: 'center', flexDirection: 'row', paddingHorizontal: 0 }}>
-          {[
-            { key: 'duration', label: 'Duration', value: filters.duration },
-            { key: 'brand', label: 'Brand', value: filters.brand },
-            { key: 'type', label: 'Type', value: filters.type },
-            { key: 'transmission', label: 'Transmission', value: filters.transmission },
-            { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
-            { key: 'minSeat', label: 'Seats', value: filters.minSeat },
-          ].map(f => (
-            <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
-              <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {[
+          { key: 'duration', label: 'Duration', value: filters.duration },
+          { key: 'brand', label: 'Brand', value: filters.brand },
+          { key: 'type', label: 'Type', value: filters.type },
+          { key: 'transmission', label: 'Transmission', value: filters.transmission },
+          { key: 'fuelType', label: 'Fuel', value: filters.fuelType },
+          { key: 'minSeat', label: 'Seats', value: filters.minSeat },
+        ].map(f => (
+          <Pressable key={f.key} onPress={() => setOpenFilter(f.key)} style={({ pressed }) => [styles.filterTag, pressed && { backgroundColor: '#f2e6f5' }] }>
+            <Text style={styles.filterTagText}>{f.label}: <Text style={{ fontWeight: 'bold' }}>{f.value}</Text></Text>
+          </Pressable>
+        ))}
+      </ScrollView>
         </View>
 
-        {/* Modal for filter selection */}
-        <Modal
-          visible={!!openFilter}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setOpenFilter(null)}
-        >
-          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} onPress={() => setOpenFilter(null)} />
-          <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 24 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#7e246c', marginBottom: 16 }}>
-              Select {openFilter && ([{ key: 'duration', label: 'Duration' }, { key: 'brand', label: 'Brand' }, { key: 'type', label: 'Type' }, { key: 'transmission', label: 'Transmission' }, { key: 'fuelType', label: 'Fuel' }, { key: 'minSeat', label: 'Seats' }].find(f => f.key === openFilter)?.label)}
-            </Text>
-            {openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
-              <TouchableOpacity
-                key={option}
-                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
-                onPress={() => {
-                  setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
-                  setOpenFilter(null);
-                }}
-              >
-                <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity onPress={() => setOpenFilter(null)} style={{ marginTop: 18, alignSelf: 'center' }}>
-              <Text style={{ color: '#7e246c', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
+      {/* Modal for filter selection */}
+      <Modal
+        visible={!!openFilter}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setOpenFilter(null)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} onPress={() => setOpenFilter(null)} />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 24 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#7e246c', marginBottom: 16 }}>
+            Select {openFilter && ([{ key: 'duration', label: 'Duration' }, { key: 'brand', label: 'Brand' }, { key: 'type', label: 'Type' }, { key: 'transmission', label: 'Transmission' }, { key: 'fuelType', label: 'Fuel' }, { key: 'minSeat', label: 'Seats' }].find(f => f.key === openFilter)?.label)}
+          </Text>
+          {openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
+            <TouchableOpacity
+              key={option}
+              style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
+              onPress={() => {
+                setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
+                setOpenFilter(null);
+              }}
+            >
+              <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
             </TouchableOpacity>
-          </View>
-        </Modal>
+          ))}
+          <TouchableOpacity onPress={() => setOpenFilter(null)} style={{ marginTop: 18, alignSelf: 'center' }}>
+            <Text style={{ color: '#7e246c', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
-          {/* Popular Cars Section - header removed */}
+        {/* Popular Cars Section - header removed */}
         <View style={{ flex: 1 }}>
-            {loading && page === 1 ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading cars...</Text>
-              </View>
-            ) : error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={cars}
+          {loading && page === 1 ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading cars...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={cars}
                 keyExtractor={(item) => `car-${item.id || item.vin || item._id || Math.random()}`}
-                renderItem={({ item }) => <CarCard car={item} />}
-                horizontal={false}
-                numColumns={1}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No cars found.</Text>
-                  </View>
-                }
-                onEndReached={onEndReached}
-                onEndReachedThreshold={0.5}
-                ListFooterComponent={loadingMore ? 
-                  <View style={styles.loadingMoreContainer}>
-                    <Text style={styles.loadingMoreText}>Loading more...</Text>
-                  </View> : null
-                }
-                style={{ flex: 1 }}
+              renderItem={({ item }) => <CarCard car={item} />}
+              horizontal={false}
+              numColumns={1}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No cars found.</Text>
+                </View>
+              }
+              onEndReached={onEndReached}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={loadingMore ? 
+                <View style={styles.loadingMoreContainer}>
+                  <Text style={styles.loadingMoreText}>Loading more...</Text>
+                </View> : null
+              }
+              style={{ flex: 1 }}
               showsVerticalScrollIndicator={true}
               scrollEnabled={true}
               bounces={true}
               alwaysBounceVertical={false}
-              />
-            )}
+            />
+          )}
         </View>
       </View>
     </SafeAreaView>

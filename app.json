@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.asaancar.mobile",
       "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyAl7gcr1SOMOmVcINkah0IjMVTqXaA8zw4"
       }
     },
     "android": {
@@ -30,7 +30,7 @@
       "package": "com.asaancar.mobile",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyAl7gcr1SOMOmVcINkah0IjMVTqXaA8zw4"
         }
       }
     },
@@ -41,7 +41,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow AsaanCar to use your location to find nearby pickup points."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

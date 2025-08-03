@@ -3,13 +3,15 @@ import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
 import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import LocationPicker from '../components/LocationPicker';
+import apiService from '../services/api';
 import { AuthContext } from './_layout';
 
 export default function CarBooking() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { isLoggedIn } = useContext(AuthContext);
-  
+
   // Parse car data from params or use default
   let car = {
     id: 1,
@@ -52,6 +54,8 @@ export default function CarBooking() {
   } | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   // Get current location on component mount
   useEffect(() => {
@@ -125,11 +129,19 @@ export default function CarBooking() {
     }
   };
 
-  const handleBookNow = () => {
-    if (!fullName.trim() || !phone.trim()) {
-      Alert.alert('Required Fields', 'Please fill in your full name and phone number.');
-      return;
+  const handleLocationSelect = (location: { latitude: number; longitude: number; address: string }) => {
+    setSelectedLocation(location);
+  };
+
+  const handleBookNow = async () => {
+    // Validation for non-logged in users
+    if (!isLoggedIn) {
+      if (!fullName.trim() || !phone.trim()) {
+        Alert.alert('Required Fields', 'Please fill in your full name and phone number.');
+        return;
+      }
     }
+
     if (!pickupDate || !pickupTime) {
       Alert.alert('Booking Details', 'Please select pickup date and time.');
       return;
@@ -138,7 +150,73 @@ export default function CarBooking() {
       Alert.alert('Location Required', 'Please select a pickup location.');
       return;
     }
-    Alert.alert('Booking Confirmed', 'Your car booking has been successfully confirmed!');
+
+    setIsBooking(true);
+    try {
+      console.log('Starting booking process...');
+      console.log('Is logged in:', isLoggedIn);
+      console.log('Booking data:', {
+        car_id: car.id,
+        car_name: car.name,
+        booking_type: bookingType,
+        pickup_date: pickupDate,
+        pickup_time: pickupTime,
+        number_of_days: numberOfDays,
+        total_price: totalPrice,
+      });
+
+      const bookingData = {
+        car_id: car.id,
+        car_name: car.name,
+        car_brand: car.brand,
+        booking_type: bookingType,
+        pickup_date: pickupDate,
+        pickup_time: pickupTime,
+        number_of_days: parseInt(numberOfDays || '1'),
+        pickup_location: selectedLocation.address,
+        pickup_latitude: selectedLocation.latitude,
+        pickup_longitude: selectedLocation.longitude,
+        total_price: totalPrice,
+        currency: car.currency,
+        // Guest booking fields
+        ...(isLoggedIn ? {} : {
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          email: email.trim() || null,
+        }),
+      };
+
+      console.log('Calling API...');
+      let response;
+      if (isLoggedIn) {
+        console.log('Calling createBooking API...');
+        response = await apiService.createBooking(bookingData);
+      } else {
+        console.log('Calling createGuestBooking API...');
+        response = await apiService.createGuestBooking(bookingData);
+      }
+      console.log('API Response:', response);
+
+      if (response && response.id) {
+        Alert.alert(
+          'Booking Confirmed!', 
+          `Your car booking has been successfully confirmed!\n\nBooking ID: ${response.id}\nTotal Amount: ${totalPrice} ${car.currency}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back()
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Booking Error', 'Failed to create booking. Please try again.');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      Alert.alert('Booking Error', 'Failed to create booking. Please check your connection and try again.');
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   const totalPrice = (bookingType === 'driver' ? car.withDriver : car.withoutDriver) * parseInt(numberOfDays || '1');
@@ -310,96 +388,62 @@ export default function CarBooking() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pickup Location</Text>
           
-          {currentLocation && (
-            <View style={styles.mapContainer}>
-              <View style={styles.webMapPlaceholder}>
-                <View style={styles.mapIconContainer}>
-                  <Text style={styles.mapIcon}>🗺️</Text>
-                </View>
-                <Text style={styles.webMapText}>Interactive Map</Text>
-                <Text style={styles.webMapSubtext}>Select your pickup location</Text>
-                
-                {/* Map-like grid pattern */}
-                <View style={styles.mapGrid}>
-                  <View style={styles.mapRow}>
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                  </View>
-                  <View style={styles.mapRow}>
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                  </View>
-                  <View style={styles.mapRow}>
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                    <View style={styles.mapCell} />
-                  </View>
-                </View>
-                
-                <TouchableOpacity 
-                  style={styles.webMapButton}
-                  onPress={() => {
-                    // Simulate location selection for web
-                    const mockLocation = {
-                      latitude: currentLocation.latitude + (Math.random() - 0.5) * 0.01,
-                      longitude: currentLocation.longitude + (Math.random() - 0.5) * 0.01,
-                      address: 'Selected Location (Demo)',
-                    };
-                    setSelectedLocation(mockLocation);
-                  }}
-                >
-                  <Text style={styles.webMapButtonText}>📍 Select Location</Text>
-        </TouchableOpacity>
-      </View>
-
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationLabel}>Selected Address:</Text>
-                <Text style={styles.locationAddress}>
-                  {selectedLocation?.address || 'Tap "Select Location" to choose pickup point'}
+          <TouchableOpacity 
+            style={styles.locationPickerButton}
+            onPress={() => setShowLocationPicker(true)}
+          >
+            <View style={styles.locationPickerContent}>
+              <Text style={styles.locationPickerIcon}>🗺️</Text>
+              <View style={styles.locationPickerText}>
+                <Text style={styles.locationPickerTitle}>
+                  {selectedLocation?.address || 'Select Pickup Location'}
                 </Text>
-                <TouchableOpacity 
-                  style={styles.useCurrentLocationButton}
-                  onPress={getCurrentLocation}
-                >
-                  <Text style={styles.useCurrentLocationText}>📍 Use Current Location</Text>
-                </TouchableOpacity>
+                <Text style={styles.locationPickerSubtitle}>
+                  {selectedLocation ? 'Tap to change location' : 'Tap to select location'}
+                </Text>
               </View>
+              <Text style={styles.locationPickerArrow}>›</Text>
+            </View>
+          </TouchableOpacity>
+
+          {selectedLocation && (
+            <View style={styles.selectedLocationInfo}>
+              <Text style={styles.locationCoordinates}>
+                {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
+              </Text>
             </View>
           )}
         </View>
 
-        {/* Customer Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Information</Text>
-          
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name *"
-            value={fullName}
-            onChangeText={setFullName}
-          />
-          
-          <TextInput
-            style={styles.input}
-            placeholder="Phone Number *"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-          
-          <TextInput
-            style={styles.input}
-            placeholder="Email (Optional)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-        </View>
+        {/* Customer Information - Only show when not logged in */}
+        {!isLoggedIn && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Information</Text>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name *"
+              value={fullName}
+              onChangeText={setFullName}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Phone Number *"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Email (Optional)"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+            />
+          </View>
+        )}
 
         {/* Price Summary */}
       </ScrollView>
@@ -437,10 +481,24 @@ export default function CarBooking() {
           </TouchableOpacity>
         )}
         
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
-          <Text style={styles.bookButtonText}>Book Now</Text>
+        <TouchableOpacity 
+          style={[styles.bookButton, isBooking && styles.bookButtonDisabled]} 
+          onPress={handleBookNow}
+          disabled={isBooking}
+        >
+          <Text style={[styles.bookButtonText, isBooking && styles.bookButtonTextDisabled]}>
+            {isBooking ? 'Booking...' : 'Book Now'}
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Location Picker Modal */}
+      <LocationPicker
+        visible={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        onLocationSelect={handleLocationSelect}
+        initialLocation={selectedLocation || undefined}
+      />
     </SafeAreaView>
   );
 }
@@ -761,6 +819,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  bookButtonDisabled: {
+    backgroundColor: '#ccc',
+    shadowOpacity: 0.1,
+    elevation: 2,
+  },
+  bookButtonTextDisabled: {
+    color: '#999',
+  },
   chatButton: {
     backgroundColor: '#4CAF50', // A green color for chat
     paddingVertical: 18,
@@ -890,5 +956,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     borderRadius: 4,
     marginHorizontal: 2,
+  },
+  locationPickerButton: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    padding: 16,
+    marginBottom: 8,
+  },
+  locationPickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationPickerIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  locationPickerText: {
+    flex: 1,
+  },
+  locationPickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  locationPickerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  locationPickerArrow: {
+    fontSize: 18,
+    color: '#666',
+    fontWeight: '600',
+  },
+  selectedLocationInfo: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  locationCoordinates: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 }); 

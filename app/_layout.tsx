@@ -182,7 +182,7 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
             open={durationOpen}
             value={durationValue}
             items={durationItems}
-            setOpen={open => handleOpen(open ? 'duration' : '')}
+            setOpen={(open) => handleOpen(open ? 'duration' : '')}
             setValue={val => setDurationValue(val ?? '')}
             onChangeValue={val => { setFilters((prev: any) => ({ ...prev, duration: val ?? '' })); setDurationValue(val ?? ''); }}
             zIndex={6000}
@@ -218,7 +218,10 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
             open={brandOpen}
             value={brandValue}
             items={brandItems}
-            setOpen={open => handleOpen(open ? 'brand' : '')}
+            setOpen={(open) => {
+              if (open) handleOpen('brand');
+              else handleOpen('');
+            }}
             setValue={val => setBrandValue(val ?? '')}
             onChangeValue={val => { setFilters((prev: any) => ({ ...prev, brand: val ?? '' })); setBrandValue(val ?? ''); }}
             zIndex={5000}
@@ -238,7 +241,10 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
             open={typeOpen}
             value={typeValue}
             items={typeItems}
-            setOpen={open => handleOpen(open ? 'type' : '')}
+            setOpen={(open) => {
+              if (open) handleOpen('type');
+              else handleOpen('');
+            }}
             setValue={val => setTypeValue(val ?? '')}
             onChangeValue={val => { setFilters((prev: any) => ({ ...prev, type: val ?? '' })); setTypeValue(val ?? ''); }}
             zIndex={4000}

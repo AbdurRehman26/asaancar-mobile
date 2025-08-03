@@ -63,7 +63,7 @@ export default function CreateAccount() {
       // Check if registration was successful
       if (response.success || response.token || response.access_token || response.user) {
         // Set authentication state
-        login();
+    login();
         
         // Navigate to car listing page
         router.replace('/(tabs)');
@@ -143,41 +143,41 @@ export default function CreateAccount() {
         {/* Input Fields */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex. John Doe"
+        <TextInput
+          style={styles.input}
+          placeholder="Ex. John Doe"
             placeholderTextColor="#999"
-            value={name}
-            onChangeText={setName}
+          value={name}
+          onChangeText={setName}
             autoCapitalize="words"
-          />
+        />
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="example@gmail.com"
+        <TextInput
+          style={styles.input}
+          placeholder="example@gmail.com"
             placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Password</Text>
           <View style={styles.passwordContainer}>
-            <TextInput
+          <TextInput
               style={styles.passwordInput}
               placeholder="Enter your password"
               placeholderTextColor="#999"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+          />
             <TouchableOpacity
               style={styles.eyeIcon}
               onPress={() => setShowPassword(!showPassword)}
@@ -185,7 +185,7 @@ export default function CreateAccount() {
               <Text style={styles.eyeIconText}>
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
           </View>
         </View>
 
@@ -202,7 +202,7 @@ export default function CreateAccount() {
           <View style={styles.termsText}>
             <Text style={styles.termsLabel}>Agree with </Text>
             <TouchableOpacity>
-              <Text style={styles.termsLink}>Terms & Condition</Text>
+            <Text style={styles.termsLink}>Terms & Condition</Text>
             </TouchableOpacity>
           </View>
         </View>

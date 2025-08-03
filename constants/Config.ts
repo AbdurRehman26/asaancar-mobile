@@ -40,7 +40,7 @@ export const PUSHER_CONFIG = {
 
 // Google Maps Configuration
 export const MAPS_CONFIG = {
-  API_KEY: 'YOUR_GOOGLE_MAPS_API_KEY', // Replace with actual API key
+  API_KEY: 'AIzaSyAl7gcr1SOMOmVcINkah0IjMVTqXaA8zw4', // Replace with actual API key
   DEFAULT_LATITUDE: 24.8607, // Karachi, Pakistan
   DEFAULT_LONGITUDE: 67.0011,
   DEFAULT_ZOOM: 12,

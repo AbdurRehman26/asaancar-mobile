@@ -91,6 +91,8 @@ class ApiService {
 
   private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('Making API request to:', url);
+    console.log('Request options:', options);
     
     // Ensure we have the latest token
     await this.loadAuthToken();
@@ -103,6 +105,9 @@ class ApiService {
     // Add auth token if available
     if (this.authToken) {
       headers['Authorization'] = `Bearer ${this.authToken}`;
+      console.log('Using auth token');
+    } else {
+      console.log('No auth token available');
     }
 
     const defaultOptions: RequestInit = {
@@ -111,24 +116,22 @@ class ApiService {
     };
 
     try {
+      console.log('Sending request with options:', defaultOptions);
       const response = await fetch(url, defaultOptions);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        // Only log critical errors to reduce console spam
-        if (response.status >= 500) {
-          console.error('API Error Response:', errorData);
-        }
+        console.error('API Error Response:', errorData);
         throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Response data:', data);
       return data;
     } catch (error) {
-      // Only log network errors in development
-      if (__DEV__) {
-        console.error('API request failed:', error);
-      }
+      console.error('API request failed:', error);
       if (error instanceof Error) {
         throw error;
       }
@@ -179,10 +182,23 @@ class ApiService {
 
   // Booking-related API calls
   async createBooking(bookingData: any): Promise<any> {
-    return this.request('/bookings', {
+    console.log('Creating booking with data:', bookingData);
+    const response = await this.request('/api/bookings', {
       method: 'POST',
       body: JSON.stringify(bookingData),
     });
+    console.log('Booking response:', response);
+    return response;
+  }
+
+  async createGuestBooking(bookingData: any): Promise<any> {
+    console.log('Creating guest booking with data:', bookingData);
+    const response = await this.request('/api/guest-bookings', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+    console.log('Guest booking response:', response);
+    return response;
   }
 
   async getBookings(userId?: string): Promise<any[]> {
