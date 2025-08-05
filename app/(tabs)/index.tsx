@@ -87,15 +87,16 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   // State for which filter is open in modal
   const [openFilter, setOpenFilter] = useState<string | null>(null);
-  // Filter options (should be fetched, but hardcoded for now)
-  const filterOptions = {
+  // Filter options - fetched from API
+  const [filterOptions, setFilterOptions] = useState({
     duration: ['Hourly', 'Daily', 'Weekly'],
-    brand: ['All Brands', 'Toyota', 'Honda', 'BMW', 'Mercedes', 'Audi'],
-    type: ['All Types', 'Sedan', 'SUV', 'Truck', 'Hatchback', 'Coupe'],
-    transmission: ['All', 'Automatic', 'Manual'],
-    fuelType: ['All', 'Petrol', 'Diesel', 'Electric', 'Hybrid'],
+    brand: ['All Brands'],
+    type: ['All Types'],
+    transmission: ['All'],
+    fuelType: ['All'],
     minSeat: ['Any', '2', '4', '5', '7', '8'],
-  };
+  });
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
 
   // Fetch cars (with pagination)
   const fetchCars = (reset = true) => {
@@ -125,82 +126,8 @@ export default function HomeScreen() {
       page: reset ? '1' : (page + 1).toString(),
     });
     
-    // For testing, use mock data if API fails
-    const mockCars = [
-      {
-        id: 1,
-        name: 'Toyota Camry',
-        brand: 'Toyota',
-        type: 'Sedan',
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        seats: 5,
-        airConditioning: true,
-        withDriver: 1500,
-        withoutDriver: 1200,
-        currency: 'PKR',
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Toyota+Camry'
-      },
-      {
-        id: 2,
-        name: 'Honda Civic',
-        brand: 'Honda',
-        type: 'Sedan',
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        seats: 5,
-        airConditioning: true,
-        withDriver: 1400,
-        withoutDriver: 1100,
-        currency: 'PKR',
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Honda+Civic'
-      },
-      {
-        id: 3,
-        name: 'BMW X5',
-        brand: 'BMW',
-        type: 'SUV',
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        seats: 7,
-        airConditioning: true,
-        withDriver: 2500,
-        withoutDriver: 2000,
-        currency: 'PKR',
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=BMW+X5'
-      },
-      {
-        id: 4,
-        name: 'Mercedes C-Class',
-        brand: 'Mercedes',
-        type: 'Sedan',
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        seats: 5,
-        airConditioning: true,
-        withDriver: 2200,
-        withoutDriver: 1800,
-        currency: 'PKR',
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Mercedes+C-Class'
-      },
-      {
-        id: 5,
-        name: 'Audi A4',
-        brand: 'Audi',
-        type: 'Sedan',
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        seats: 5,
-        airConditioning: true,
-        withDriver: 2000,
-        withoutDriver: 1600,
-        currency: 'PKR',
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Audi+A4'
-      }
-    ];
-
-    // Try API first, fallback to mock data
-    apiService.getCars(params)
+    // Use real API to fetch cars
+    apiService.getCars(params.toString())
       .then(data => {
         if (Array.isArray(data)) {
           if (reset) setCars(data);
@@ -221,12 +148,10 @@ export default function HomeScreen() {
         setPage(reset ? 1 : page + 1);
       })
       .catch((error) => {
-        // Silently use mock data for testing - reduce console spam
+        // Handle API error
+        setError('Failed to load cars. Please try again.');
         if (reset) {
-          setCars(mockCars);
-          setHasMore(true);
-        } else {
-          setCars(prev => [...prev, ...mockCars]);
+          setCars([]);
           setHasMore(false);
         }
         setPage(reset ? 1 : page + 1);
@@ -244,7 +169,29 @@ export default function HomeScreen() {
     }
   };
 
+  // Fetch filter options from API
+  const fetchFilterOptions = async () => {
+    try {
+      setFilterOptionsLoading(true);
+      const options = await apiService.getFilterOptions();
+      
+      setFilterOptions(prev => ({
+        ...prev,
+        brand: ['All Brands', ...(options.brands || [])],
+        type: ['All Types', ...(options.types || [])],
+        transmission: ['All', ...(options.transmissions || [])],
+        fuelType: ['All', ...(options.fuelTypes || [])],
+      }));
+    } catch (error) {
+      console.error('Failed to fetch filter options:', error);
+      // Keep default values if API fails
+    } finally {
+      setFilterOptionsLoading(false);
+    }
+  };
+
   React.useEffect(() => {
+    fetchFilterOptions();
     fetchCars(true);
   }, []);
 
@@ -298,18 +245,24 @@ export default function HomeScreen() {
           <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#7e246c', marginBottom: 16 }}>
             Select {openFilter && ([{ key: 'duration', label: 'Duration' }, { key: 'brand', label: 'Brand' }, { key: 'type', label: 'Type' }, { key: 'transmission', label: 'Transmission' }, { key: 'fuelType', label: 'Fuel' }, { key: 'minSeat', label: 'Seats' }].find(f => f.key === openFilter)?.label)}
           </Text>
-          {openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
-            <TouchableOpacity
-              key={option}
-              style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
-              onPress={() => {
-                setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
-                setOpenFilter(null);
-              }}
-            >
-              <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
-            </TouchableOpacity>
-          ))}
+          {filterOptionsLoading ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, color: '#666' }}>Loading options...</Text>
+            </View>
+          ) : (
+            openFilter && (filterOptions[openFilter as keyof typeof filterOptions] as string[])?.map((option: string) => (
+              <TouchableOpacity
+                key={option}
+                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' }}
+                onPress={() => {
+                  setFilters((prev: any) => ({ ...prev, [openFilter]: option }));
+                  setOpenFilter(null);
+                }}
+              >
+                <Text style={{ fontSize: 16, color: (filters as any)[openFilter] === option ? '#7e246c' : '#222', fontWeight: (filters as any)[openFilter] === option ? 'bold' : 'normal' }}>{option}</Text>
+              </TouchableOpacity>
+            ))
+          )}
           <TouchableOpacity onPress={() => setOpenFilter(null)} style={{ marginTop: 18, alignSelf: 'center' }}>
             <Text style={{ color: '#7e246c', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
           </TouchableOpacity>

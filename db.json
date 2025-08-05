@@ -1,0 +1,90 @@
+{
+  "cars": [
+    {
+      "id": "1",
+      "name": "Toyota Camry",
+      "brand": "Toyota",
+      "type": "Sedan",
+      "seats": 5,
+      "transmission": "Automatic",
+      "fuelType": "Petrol",
+      "pricePerHour": 30,
+      "pricePerDay": 200,
+      "image": "https://via.placeholder.com/300x200/7e246c/ffffff?text=Toyota+Camry",
+      "available": true
+    },
+    {
+      "id": "2",
+      "name": "Honda Civic",
+      "brand": "Honda",
+      "type": "Sedan",
+      "seats": 5,
+      "transmission": "Manual",
+      "fuelType": "Petrol",
+      "pricePerHour": 25,
+      "pricePerDay": 180,
+      "image": "https://via.placeholder.com/300x200/7e246c/ffffff?text=Honda+Civic",
+      "available": true
+    },
+    {
+      "id": "3",
+      "name": "BMW X5",
+      "brand": "BMW",
+      "type": "SUV",
+      "seats": 7,
+      "transmission": "Automatic",
+      "fuelType": "Diesel",
+      "pricePerHour": 50,
+      "pricePerDay": 350,
+      "image": "https://via.placeholder.com/300x200/7e246c/ffffff?text=BMW+X5",
+      "available": true
+    },
+    {
+      "id": "4",
+      "name": "Mercedes C-Class",
+      "brand": "Mercedes",
+      "type": "Sedan",
+      "seats": 5,
+      "transmission": "Automatic",
+      "fuelType": "Petrol",
+      "pricePerHour": 45,
+      "pricePerDay": 320,
+      "image": "https://via.placeholder.com/300x200/7e246c/ffffff?text=Mercedes+C-Class",
+      "available": true
+    },
+    {
+      "id": "5",
+      "name": "Audi A4",
+      "brand": "Audi",
+      "type": "Sedan",
+      "seats": 5,
+      "transmission": "Automatic",
+      "fuelType": "Petrol",
+      "pricePerHour": 40,
+      "pricePerDay": 280,
+      "image": "https://via.placeholder.com/300x200/7e246c/ffffff?text=Audi+A4",
+      "available": true
+    }
+  ],
+  "car-brands": [
+    {"id": 1, "name": "Toyota"},
+    {"id": 2, "name": "Honda"},
+    {"id": 3, "name": "BMW"},
+    {"id": 4, "name": "Mercedes"},
+    {"id": 5, "name": "Audi"}
+  ],
+  "car-types": [
+    {"id": 1, "name": "Sedan"},
+    {"id": 2, "name": "SUV"},
+    {"id": 3, "name": "Hatchback"},
+    {"id": 4, "name": "Van"},
+    {"id": 5, "name": "Luxury"}
+  ],
+  "car-engines": [
+    {"id": 1, "name": "1.5L"},
+    {"id": 2, "name": "2.0L"},
+    {"id": 3, "name": "2.5L"},
+    {"id": 4, "name": "3.0L"},
+    {"id": 5, "name": "Electric"}
+  ]
+} 

@@ -90,9 +90,8 @@ class ApiService {
   }
 
   private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
+    // Use only asaancar.test as the base URL
     const url = `${this.baseURL}${endpoint}`;
-    console.log('Making API request to:', url);
-    console.log('Request options:', options);
     
     // Ensure we have the latest token
     await this.loadAuthToken();
@@ -105,9 +104,6 @@ class ApiService {
     // Add auth token if available
     if (this.authToken) {
       headers['Authorization'] = `Bearer ${this.authToken}`;
-      console.log('Using auth token');
-    } else {
-      console.log('No auth token available');
     }
 
     const defaultOptions: RequestInit = {
@@ -116,22 +112,23 @@ class ApiService {
     };
 
     try {
-      console.log('Sending request with options:', defaultOptions);
       const response = await fetch(url, defaultOptions);
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error Response:', errorData);
+        let errorData: any = {};
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          const textError = await response.text();
+          errorData = { message: textError };
+        }
+        
         throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('Response data:', data);
       return data;
-    } catch (error) {
-      console.error('API request failed:', error);
+    } catch (error: any) {
       if (error instanceof Error) {
         throw error;
       }
@@ -157,19 +154,58 @@ class ApiService {
   // Get car brands
   async getCarBrands(): Promise<any[]> {
     const response = await this.request(API_CONFIG.ENDPOINTS.CAR_BRANDS);
-    return response;
+    return response.data || response;
   }
 
   // Get car types
   async getCarTypes(): Promise<any[]> {
     const response = await this.request(API_CONFIG.ENDPOINTS.CAR_TYPES);
-    return response;
+    return response.data || response;
   }
 
   // Get car engines
   async getCarEngines(): Promise<any[]> {
     const response = await this.request(API_CONFIG.ENDPOINTS.CAR_ENGINES);
-    return response;
+    return response.data || response;
+  }
+
+  // Get car transmission types
+  async getCarTransmissions(): Promise<any[]> {
+    // Return local transmission data
+    return ['Automatic', 'Manual'];
+  }
+
+  // Get car fuel types
+  async getCarFuelTypes(): Promise<any[]> {
+    const response = await this.request('/api/customer/car-engines');
+    return response.data || response;
+  }
+
+  // Get all filter options
+  async getFilterOptions(): Promise<any> {
+    try {
+      const [brands, types, transmissions, fuelTypes] = await Promise.all([
+        this.getCarBrands(),
+        this.getCarTypes(),
+        this.getCarTransmissions(),
+        this.getCarFuelTypes(),
+      ]);
+
+      return {
+        brands: brands || [],
+        types: types || [],
+        transmissions: transmissions || [],
+        fuelTypes: fuelTypes || [],
+      };
+    } catch (error) {
+      // Return default values if API fails
+      return {
+        brands: ['Toyota', 'Honda', 'BMW', 'Mercedes', 'Audi'],
+        types: ['Sedan', 'SUV', 'Truck', 'Hatchback', 'Coupe'],
+        transmissions: ['Automatic', 'Manual'],
+        fuelTypes: ['Petrol', 'Diesel', 'Electric', 'Hybrid'],
+      };
+    }
   }
 
   async getCarById(id: string): Promise<any> {
@@ -182,23 +218,23 @@ class ApiService {
 
   // Booking-related API calls
   async createBooking(bookingData: any): Promise<any> {
-    console.log('Creating booking with data:', bookingData);
     const response = await this.request('/api/bookings', {
       method: 'POST',
       body: JSON.stringify(bookingData),
     });
-    console.log('Booking response:', response);
     return response;
   }
 
   async createGuestBooking(bookingData: any): Promise<any> {
-    console.log('Creating guest booking with data:', bookingData);
-    const response = await this.request('/api/guest-bookings', {
-      method: 'POST',
-      body: JSON.stringify(bookingData),
-    });
-    console.log('Guest booking response:', response);
-    return response;
+    try {
+      const response = await this.request('/api/guest-booking', {
+        method: 'POST',
+        body: JSON.stringify(bookingData),
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getBookings(userId?: string): Promise<any[]> {
@@ -416,77 +452,8 @@ class ApiService {
     return this.request(`/locations/${locationId}`);
   }
 
-  // Mock data for development
-  getMockCars(): any[] {
-    return [
-      {
-        id: '1',
-        name: 'Toyota Camry',
-        brand: 'Toyota',
-        type: 'Sedan',
-        seats: 5,
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        pricePerHour: 30,
-        pricePerDay: 200,
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Toyota+Camry',
-        available: true,
-      },
-      {
-        id: '2',
-        name: 'Honda Civic',
-        brand: 'Honda',
-        type: 'Sedan',
-        seats: 5,
-        transmission: 'Manual',
-        fuelType: 'Petrol',
-        pricePerHour: 25,
-        pricePerDay: 180,
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Honda+Civic',
-        available: true,
-      },
-      {
-        id: '3',
-        name: 'BMW X5',
-        brand: 'BMW',
-        type: 'SUV',
-        seats: 7,
-        transmission: 'Automatic',
-        fuelType: 'Diesel',
-        pricePerHour: 50,
-        pricePerDay: 350,
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=BMW+X5',
-        available: true,
-      },
-      {
-        id: '4',
-        name: 'Mercedes C-Class',
-        brand: 'Mercedes',
-        type: 'Sedan',
-        seats: 5,
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        pricePerHour: 45,
-        pricePerDay: 320,
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Mercedes+C-Class',
-        available: true,
-      },
-      {
-        id: '5',
-        name: 'Audi A4',
-        brand: 'Audi',
-        type: 'Sedan',
-        seats: 5,
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        pricePerHour: 40,
-        pricePerDay: 280,
-        image: 'https://via.placeholder.com/300x200/7e246c/ffffff?text=Audi+A4',
-        available: true,
-      },
-    ];
-  }
+
 }
 
 export const apiService = new ApiService();
-export default apiService; 
+export default apiService;

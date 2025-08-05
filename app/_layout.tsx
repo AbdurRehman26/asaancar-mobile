@@ -182,7 +182,7 @@ function FilterDrawer({ navigation }: DrawerScreenProps<DrawerParamList, 'Filter
             open={durationOpen}
             value={durationValue}
             items={durationItems}
-            setOpen={(open) => handleOpen(open ? 'duration' : '')}
+            setOpen={(open: boolean) => handleOpen(open ? 'duration' : '')}
             setValue={val => setDurationValue(val ?? '')}
             onChangeValue={val => { setFilters((prev: any) => ({ ...prev, duration: val ?? '' })); setDurationValue(val ?? ''); }}
             zIndex={6000}

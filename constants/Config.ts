@@ -1,13 +1,14 @@
+
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://asaancar.test',
+  BASE_URL: 'https://asaancar.com',
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
   ENDPOINTS: {
     CARS: '/api/cars',
-    CAR_BRANDS: '/api/car-brands',
-    CAR_TYPES: '/api/car-types',
-    CAR_ENGINES: '/api/car-engines',
+    CAR_BRANDS: '/api/customer/car-brands',
+    CAR_TYPES: '/api/customer/car-types',
+    CAR_ENGINES: '/api/customer/car-engines',
     LOGIN: '/api/login',
     REGISTER: '/api/register',
     LOGOUT: '/api/logout',

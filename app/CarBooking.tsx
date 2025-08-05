@@ -2,7 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
-import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LocationPicker from '../components/LocationPicker';
 import apiService from '../services/api';
 import { AuthContext } from './_layout';
@@ -12,37 +12,41 @@ export default function CarBooking() {
   const params = useLocalSearchParams();
   const { isLoggedIn } = useContext(AuthContext);
 
-  // Parse car data from params or use default
-  let car = {
-    id: 1,
-    name: 'Toyota Camry',
-    brand: 'Toyota',
-    type: 'Sedan',
-    transmission: 'Automatic',
-    fuelType: 'Petrol',
-    seats: 5,
-    withDriver: 1500,
-    withoutDriver: 1200,
-    currency: 'PKR',
-    image: 'https://picsum.photos/300/200?random=1'
-  };
+  // Parse car data from params
+  let car: any = null;
 
   try {
     if (params.car) {
-      const parsedCar = JSON.parse(params.car as string);
-      car = { ...car, ...parsedCar };
+      car = JSON.parse(params.car as string);
     }
   } catch (error) {
-
+    console.error('Failed to parse car data:', error);
   }
 
+  // If no car data, redirect back
+  if (!car) {
+    useEffect(() => {
+      router.back();
+    }, []);
+    return null;
+  }
+
+  // Set default date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultDate = tomorrow.toISOString().split('T')[0];
+  
+  // Set default time to 10:00 AM
+  const defaultTime = '10:00';
+  
   const [bookingType, setBookingType] = useState<'self' | 'driver'>('self');
-  const [pickupDate, setPickupDate] = useState('');
-  const [pickupTime, setPickupTime] = useState('');
+  const [pickupDate, setPickupDate] = useState(defaultDate);
+  const [pickupTime, setPickupTime] = useState(defaultTime);
   const [numberOfDays, setNumberOfDays] = useState('1');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -76,7 +80,7 @@ export default function CarBooking() {
       const mockLocation = {
         latitude: defaultLocation.latitude,
         longitude: defaultLocation.longitude,
-        address: 'Karachi, Pakistan (Default Location)',
+        address: 'RXQW+RW Lalazar, Karachi, Pakistan',
       };
       setSelectedLocation(mockLocation);
     } catch (error) {
@@ -91,7 +95,7 @@ export default function CarBooking() {
       const mockLocation = {
         latitude: defaultLocation.latitude,
         longitude: defaultLocation.longitude,
-        address: 'Karachi, Pakistan (Default Location)',
+        address: 'RXQW+RW Lalazar, Karachi, Pakistan',
       };
       setSelectedLocation(mockLocation);
     }
@@ -153,54 +157,30 @@ export default function CarBooking() {
 
     setIsBooking(true);
     try {
-      console.log('Starting booking process...');
-      console.log('Is logged in:', isLoggedIn);
-      console.log('Booking data:', {
-        car_id: car.id,
-        car_name: car.name,
-        booking_type: bookingType,
-        pickup_date: pickupDate,
-        pickup_time: pickupTime,
-        number_of_days: numberOfDays,
-        total_price: totalPrice,
-      });
-
       const bookingData = {
         car_id: car.id,
-        car_name: car.name,
-        car_brand: car.brand,
-        booking_type: bookingType,
-        pickup_date: pickupDate,
-        pickup_time: pickupTime,
+        guest_name: fullName.trim(),
+        guest_phone: phone.trim(),
+        notes: notes || "",
         number_of_days: parseInt(numberOfDays || '1'),
+        pickup_date: pickupDate,
         pickup_location: selectedLocation.address,
-        pickup_latitude: selectedLocation.latitude,
-        pickup_longitude: selectedLocation.longitude,
+        pickup_time: pickupTime,
+        refill_tank: false,
+        rental_type: bookingType === 'driver' ? 'with_driver' : 'without_driver',
         total_price: totalPrice,
-        currency: car.currency,
-        // Guest booking fields
-        ...(isLoggedIn ? {} : {
-          full_name: fullName.trim(),
-          phone: phone.trim(),
-          email: email.trim() || null,
-        }),
       };
 
-      console.log('Calling API...');
       let response;
       if (isLoggedIn) {
-        console.log('Calling createBooking API...');
         response = await apiService.createBooking(bookingData);
       } else {
-        console.log('Calling createGuestBooking API...');
         response = await apiService.createGuestBooking(bookingData);
       }
-      console.log('API Response:', response);
-
-      if (response && response.id) {
+      if (response && response.data) {
         Alert.alert(
           'Booking Confirmed!', 
-          `Your car booking has been successfully confirmed!\n\nBooking ID: ${response.id}\nTotal Amount: ${totalPrice} ${car.currency}`,
+          `Your car booking has been successfully confirmed!\n\nBooking ID: ${response.data.id}\nTotal Amount: ${totalPrice} ${car.currency}`,
           [
             {
               text: 'OK',
@@ -212,7 +192,6 @@ export default function CarBooking() {
         Alert.alert('Booking Error', 'Failed to create booking. Please try again.');
       }
     } catch (error) {
-      console.error('Booking error:', error);
       Alert.alert('Booking Error', 'Failed to create booking. Please check your connection and try again.');
     } finally {
       setIsBooking(false);
@@ -240,7 +219,17 @@ export default function CarBooking() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Car Details Card */}
         <View style={styles.carSection}>
           <View style={styles.carImageContainer}>
@@ -425,6 +414,8 @@ export default function CarBooking() {
               placeholder="Full Name *"
               value={fullName}
               onChangeText={setFullName}
+              returnKeyType="next"
+              blurOnSubmit={false}
             />
             
             <TextInput
@@ -433,6 +424,8 @@ export default function CarBooking() {
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
+              returnKeyType="next"
+              blurOnSubmit={false}
             />
             
             <TextInput
@@ -441,12 +434,26 @@ export default function CarBooking() {
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              returnKeyType="next"
+              blurOnSubmit={false}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Notes (Optional)"
+              value={notes}
+              onChangeText={setNotes}
+              multiline={true}
+              numberOfLines={3}
+              returnKeyType="done"
+              blurOnSubmit={true}
             />
           </View>
         )}
 
         {/* Price Summary */}
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Date Picker Modal */}
       {showDatePicker && (
